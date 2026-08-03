@@ -306,9 +306,10 @@ export async function upsertProfileByUsername(
   }
 }
 
-/** Delete a profile row from Supabase by id */
+/** Delete a profile row from Supabase by id (and username fallback). Verifies gone. */
 export async function deleteProfileRemote(
   id: string,
+  username?: string,
 ): Promise<ApiResult<true>> {
   const sb = getSupabase();
   if (!sb) return { ok: false, error: CLOUD_ERROR_MSG, code: "not_configured" };
@@ -316,6 +317,54 @@ export async function deleteProfileRemote(
   try {
     const { error } = await sb.from("profiles").delete().eq("id", id);
     if (error) return { ok: false, error: friendlyError(error), code: error.code };
+
+    // Fallback by username (some policies key on username)
+    if (username) {
+      const u = username.trim().toLowerCase();
+      if (u) {
+        await sb.from("profiles").delete().eq("username", u);
+      }
+    }
+
+    // Verify the row is actually gone
+    const { data: still, error: checkErr } = await sb
+      .from("profiles")
+      .select("id")
+      .eq("id", id)
+      .maybeSingle();
+    if (checkErr) {
+      // Treat check failure as soft uncertainty — caller still tombs locally
+      console.warn(
+        "[Academia Arcana] Nube: no se pudo verificar el borrado ·",
+        checkErr.message,
+      );
+      return { ok: true, data: true };
+    }
+    if (still) {
+      return {
+        ok: false,
+        error:
+          "No pudimos borrar el perfil en la nube. Revisa los permisos de la tabla profiles.",
+        code: "delete_blocked",
+      };
+    }
+
+    if (username) {
+      const { data: byUser } = await sb
+        .from("profiles")
+        .select("id")
+        .eq("username", username.trim().toLowerCase())
+        .maybeSingle();
+      if (byUser) {
+        return {
+          ok: false,
+          error:
+            "No pudimos borrar el perfil en la nube. Revisa los permisos de la tabla profiles.",
+          code: "delete_blocked",
+        };
+      }
+    }
+
     return { ok: true, data: true };
   } catch (e) {
     return { ok: false, error: friendlyError(e) };

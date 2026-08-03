@@ -178,9 +178,45 @@ type CreateResult =
   | { ok: true; profile: StudentProfile }
   | { ok: false; error: string };
 
+
+function isTombstoned(
+  s: { deletedIds: string[]; deletedUsernames: string[] },
+  id: string,
+  username?: string,
+): boolean {
+  if (s.deletedIds.includes(id)) return true;
+  if (username && s.deletedUsernames.includes(username.trim().toLowerCase())) {
+    return true;
+  }
+  return false;
+}
+
+function withTombstone(
+  s: ProfilesState,
+  id: string,
+  username: string,
+): Partial<ProfilesState> {
+  const deletedIds = s.deletedIds.includes(id)
+    ? s.deletedIds
+    : [...s.deletedIds, id];
+  const u = username.trim().toLowerCase();
+  const deletedUsernames =
+    u && !s.deletedUsernames.includes(u)
+      ? [...s.deletedUsernames, u]
+      : s.deletedUsernames;
+  const profiles = { ...s.profiles };
+  delete profiles[id];
+  const activeProfileId =
+    s.activeProfileId === id ? null : s.activeProfileId;
+  return { deletedIds, deletedUsernames, profiles, activeProfileId };
+}
+
 type ProfilesState = {
   activeProfileId: string | null;
   profiles: Record<string, StudentProfile>;
+  /** Tombstones so deleted profiles never reappear from cloud or cache */
+  deletedIds: string[];
+  deletedUsernames: string[];
   bootstrapped: boolean;
   loading: boolean;
   cloudEnabled: boolean;
@@ -224,6 +260,8 @@ export const useProfilesStore = create<ProfilesState>()(
     (set, get) => ({
       activeProfileId: null,
       profiles: {},
+      deletedIds: [],
+      deletedUsernames: [],
       bootstrapped: false,
       loading: false,
       cloudEnabled: isSupabaseConfigured(),
@@ -296,6 +334,13 @@ export const useProfilesStore = create<ProfilesState>()(
             input.displayName.trim() ||
             check.normalized.charAt(0).toUpperCase() +
               check.normalized.slice(1);
+
+          // Allow reusing a previously deleted username
+          set((s) => ({
+            deletedUsernames: s.deletedUsernames.filter(
+              (u) => u !== check.normalized,
+            ),
+          }));
 
           await get().flushActiveToCloud();
 
@@ -648,15 +693,22 @@ export const useProfilesStore = create<ProfilesState>()(
             return { ok: false, error: res.error };
           }
           const localAll = get().profiles;
+          const tomb = get();
           const map: Record<string, StudentProfile> = {};
           for (const remote of res.data) {
+            if (isTombstoned(tomb, remote.id, remote.username)) {
+              void deleteProfileRemote(remote.id, remote.username);
+              continue;
+            }
             map[remote.id] = mergeProfilePreferRicher(
               localAll[remote.id],
               remote,
             );
           }
           for (const [id, p] of Object.entries(localAll)) {
-            if (!map[id]) map[id] = ensureInviteFields(p);
+            if (map[id]) continue;
+            if (isTombstoned(tomb, id, p.username)) continue;
+            map[id] = ensureInviteFields(p);
           }
           set({
             profiles: map,
@@ -675,48 +727,59 @@ export const useProfilesStore = create<ProfilesState>()(
         try {
           const profile = get().profiles[id];
           if (!profile) {
-            return { ok: false, error: "No encontramos ese perfil." };
+            // Still tombstone unknown ids so they never reappear
+            set((s) => ({
+              ...withTombstone(s as ProfilesState, id, ""),
+              lastSyncOk: true,
+              cloudError: null,
+            }));
+            return { ok: true };
+          }
+
+          const username = profile.username;
+
+          // Tombstone first so reload / bootstrap cannot resurrect
+          set((s) => ({
+            ...withTombstone(s as ProfilesState, id, username),
+            lastSyncOk: false,
+          }));
+          try {
+            // Never re-import legacy Liz after a deliberate delete
+            localStorage.setItem("academia-arcana-legacy-migrated-v1", "1");
+          } catch {
+            /* ignore */
           }
 
           if (cloudOn) {
-            const remote = await deleteProfileRemote(id);
-            if (!remote.ok) {
-              // Still remove local so the family can manage this device;
-              // warn that the cloud copy may remain until retry.
+            // Retry a few times — permanent delete on cloud is required
+            let lastErr = "";
+            let ok = false;
+            for (let attempt = 0; attempt < 3; attempt++) {
+              const remote = await deleteProfileRemote(id, username);
+              if (remote.ok) {
+                ok = true;
+                break;
+              }
+              lastErr = remote.error;
               console.warn(
-                "[Academia Arcana] Nube: no se pudo borrar en la nube ·",
+                "[Academia Arcana] Nube: intento de borrado fallido ·",
+                attempt + 1,
                 remote.error,
-                "· se borra en local",
               );
-              set((s) => {
-                const profiles = { ...s.profiles };
-                delete profiles[id];
-                const activeProfileId =
-                  s.activeProfileId === id ? null : s.activeProfileId;
-                return {
-                  profiles,
-                  activeProfileId,
-                  lastSyncOk: false,
-                  cloudError:
-                    "Perfil borrado aquí. Si la nube no respondió, puede quedar una copia hasta reintentar.",
-                };
+            }
+            if (!ok) {
+              // Local + tombstone stay; warn but do not bring profile back
+              set({
+                lastSyncOk: false,
+                cloudError:
+                  lastErr ||
+                  "Perfil borrado en este aparato. La nube no confirmó el borrado.",
               });
               return { ok: true };
             }
           }
 
-          set((s) => {
-            const profiles = { ...s.profiles };
-            delete profiles[id];
-            const activeProfileId =
-              s.activeProfileId === id ? null : s.activeProfileId;
-            return {
-              profiles,
-              activeProfileId,
-              lastSyncOk: true,
-              cloudError: null,
-            };
-          });
+          set({ lastSyncOk: true, cloudError: null });
           return { ok: true };
         } finally {
           set({ loading: false });
@@ -751,12 +814,29 @@ export const useProfilesStore = create<ProfilesState>()(
       },
 
       bootstrapFromLegacy: async () => {
+        // Wait for localStorage rehydrate so deletedIds tombstones are present
+        await new Promise<void>((resolve) => {
+          const api = useProfilesStore.persist;
+          if (api.hasHydrated()) {
+            resolve();
+            return;
+          }
+          const unsub = api.onFinishHydration(() => {
+            unsub();
+            resolve();
+          });
+          // Safety timeout if rehydrate never fires
+          setTimeout(() => resolve(), 1500);
+        });
+
         if (get().bootstrapped) return;
         const cloudOn = isSupabaseConfigured();
         if (typeof console !== "undefined") {
           console.info(
             "[Academia Arcana] bootstrap · cloudEnabled=",
             cloudOn,
+            "· tombstones=",
+            get().deletedIds.length,
           );
         }
         set({
@@ -771,16 +851,24 @@ export const useProfilesStore = create<ProfilesState>()(
             const res = await fetchAllProfiles();
             if (res.ok) {
               const local = get().profiles;
+              const tomb = get();
               const map: Record<string, StudentProfile> = {};
               for (const remote of res.data) {
+                if (isTombstoned(tomb, remote.id, remote.username)) {
+                  // Re-attempt permanent cloud delete for tombstoned rows
+                  void deleteProfileRemote(remote.id, remote.username);
+                  continue;
+                }
                 map[remote.id] = mergeProfilePreferRicher(
                   local[remote.id],
                   remote,
                 );
               }
-              // Keep any local-only profiles (not yet on cloud)
+              // Keep any local-only profiles (not yet on cloud, not deleted)
               for (const [id, p] of Object.entries(local)) {
-                if (!map[id]) map[id] = ensureInviteFields(p);
+                if (map[id]) continue;
+                if (isTombstoned(tomb, id, p.username)) continue;
+                map[id] = ensureInviteFields(p);
               }
               set({ profiles: map, lastSyncOk: true });
             } else {
@@ -792,7 +880,7 @@ export const useProfilesStore = create<ProfilesState>()(
             }
           }
 
-          // 2) Migrate legacy Liz save if needed
+          // 2) Migrate legacy Liz save ONCE — never resurrect after delete
           let legacyProgress: PlayerProgress | null = null;
           let displayName = "Liz";
           try {
@@ -811,32 +899,36 @@ export const useProfilesStore = create<ProfilesState>()(
                   ...(st as Partial<PlayerProgress>),
                   session: null as null,
                 };
-                const patch = progressToGamePatch(
-                  merged,
-                  typeof st.playerName === "string" ? st.playerName : "Liz",
-                );
-                useGameStore.setState(patch as never);
-                legacyProgress = snapshotProgress(useGameStore.getState());
-                displayName =
+                const name =
                   typeof st.playerName === "string" && st.playerName.trim()
                     ? st.playerName.trim()
                     : "Liz";
+                const patch = progressToGamePatch(merged, name);
+                useGameStore.setState(patch as never);
+                legacyProgress = snapshotProgress(useGameStore.getState());
+                displayName = name;
               }
             }
           } catch {
             /* ignore */
           }
 
-          if (legacyProgress) {
+          const alreadyMigrated =
+            typeof localStorage !== "undefined" &&
+            localStorage.getItem("academia-arcana-legacy-migrated-v1") === "1";
+
+          if (legacyProgress && !alreadyMigrated) {
             // Already have a liz-like user in cloud/cache?
             const hasLiz = Object.values(get().profiles).some(
               (p) =>
                 p.username === "liz" ||
-                p.displayName.toLowerCase() === "liz" ||
-                p.progress.xp > 0,
+                p.username.startsWith("liz") ||
+                p.displayName.toLowerCase() === "liz",
             );
+            const lizTombstoned = isTombstoned(get(), "", "liz");
 
-            if (!hasLiz || !Object.keys(get().profiles).length) {
+            // Only create when missing AND not intentionally deleted
+            if (!hasLiz && !lizTombstoned && Object.keys(get().profiles).length === 0) {
               let finalUser = "liz";
               let n = 1;
               while (get().isUsernameTaken(finalUser)) {
@@ -853,6 +945,15 @@ export const useProfilesStore = create<ProfilesState>()(
                 }
               }
 
+              // Skip if this username was deleted
+              if (isTombstoned(get(), "", finalUser)) {
+                try {
+                  localStorage.setItem("academia-arcana-legacy-migrated-v1", "1");
+                  localStorage.removeItem(LEGACY_GAME_KEY);
+                } catch {
+                  /* ignore */
+                }
+              } else {
               const id = newId();
               const profile: StudentProfile = ensureInviteFields({
                 id,
@@ -878,11 +979,6 @@ export const useProfilesStore = create<ProfilesState>()(
                     activeProfileId: up.data.id,
                   }));
                   applyProgressToGame(up.data.progress, up.data.displayName);
-                  try {
-                    localStorage.removeItem(LEGACY_GAME_KEY);
-                  } catch {
-                    /* ignore */
-                  }
                 } else {
                   // Local fallback so Liz is not lost
                   set((s) => ({
@@ -899,6 +995,28 @@ export const useProfilesStore = create<ProfilesState>()(
                 }));
                 applyProgressToGame(legacyProgress, displayName);
               }
+              try {
+                localStorage.setItem("academia-arcana-legacy-migrated-v1", "1");
+                localStorage.removeItem(LEGACY_GAME_KEY);
+              } catch {
+                /* ignore */
+              }
+              } // end else not tombstoned
+            } else {
+              // Profiles already present or liz deleted — don't re-create
+              try {
+                localStorage.setItem("academia-arcana-legacy-migrated-v1", "1");
+                localStorage.removeItem(LEGACY_GAME_KEY);
+              } catch {
+                /* ignore */
+              }
+            }
+          } else if (legacyProgress && alreadyMigrated) {
+            // Drop stale legacy blob so it never re-imports
+            try {
+              localStorage.removeItem(LEGACY_GAME_KEY);
+            } catch {
+              /* ignore */
             }
           }
 
@@ -939,17 +1057,40 @@ export const useProfilesStore = create<ProfilesState>()(
     }),
     {
       name: "academia-arcana-profiles-v1",
-      version: 3,
+      version: 4,
       partialize: (s) => ({
         // Don't persist active session — always open on profile picker
         profiles: s.profiles,
+        deletedIds: s.deletedIds,
+        deletedUsernames: s.deletedUsernames,
       }),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<typeof current>;
-        // Only restore profiles — never trust cached cloudEnabled (env can change per deploy)
+        const deletedIds = Array.isArray(p.deletedIds)
+          ? (p.deletedIds as string[])
+          : current.deletedIds;
+        const deletedUsernames = Array.isArray(p.deletedUsernames)
+          ? (p.deletedUsernames as string[])
+          : current.deletedUsernames;
+        const rawProfiles =
+          (p.profiles as typeof current.profiles) ?? current.profiles;
+        // Drop any tombstoned profiles from cache
+        const profiles: typeof current.profiles = {};
+        for (const [id, prof] of Object.entries(rawProfiles || {})) {
+          if (deletedIds.includes(id)) continue;
+          if (
+            prof?.username &&
+            deletedUsernames.includes(prof.username.toLowerCase())
+          ) {
+            continue;
+          }
+          profiles[id] = prof;
+        }
         return {
           ...current,
-          profiles: (p.profiles as typeof current.profiles) ?? current.profiles,
+          profiles,
+          deletedIds,
+          deletedUsernames,
           activeProfileId: null,
           bootstrapped: false,
           cloudEnabled: isSupabaseConfigured(),

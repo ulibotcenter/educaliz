@@ -4,6 +4,7 @@ import { useGameStore } from "@/lib/game-store";
 import {
   AVATAR_OPTIONS,
   XP_SHOP,
+  avatarFaceEmoji,
   isAvatarOptionUnlocked,
   normalizeAvatar,
   type AvatarConfig,
@@ -15,11 +16,26 @@ import { cn } from "@/lib/utils";
 
 const SKIN_FACE: Record<AvatarConfig["skin"], string> = {
   fair: "👧",
-  warm: "👧🏻",
-  deep: "👩🏽",
-  rose: "👩🏻",
-  peach: "👧🏻",
-  olive: "👩🏽‍🦱",
+  ivory: "👧🏻",
+  warm: "👧🏼",
+  peach: "👧🏼",
+  rose: "👧🏻",
+  golden: "👧",
+  olive: "👧",
+  bronze: "👧🏾",
+  deep: "👧🏿",
+};
+
+const HAIR_EMOJI: Record<AvatarConfig["hair"], string> = {
+  none: "",
+  short: "✂️",
+  wavy: "🌊",
+  curly: "🌀",
+  long: "💇",
+  bun: "🎀",
+  spiky: "⚡",
+  braids: "🧵",
+  ponytail: "🎐",
 };
 
 const HAT_EMOJI: Record<AvatarConfig["hat"], string> = {
@@ -189,8 +205,30 @@ export function AvatarPortrait({
           </span>
         )}
         <span className={face} aria-hidden>
-          {SKIN_FACE[avatar.skin] ?? "👧"}
+          {avatarFaceEmoji(avatar)}
         </span>
+        {avatar.hair !== "none" && avatar.hat === "none" && (
+          <span
+            className={cn(
+              "absolute -right-0.5 top-1",
+              size === "sm" ? "text-[10px]" : "text-sm",
+            )}
+            aria-hidden
+          >
+            {HAIR_EMOJI[avatar.hair]}
+          </span>
+        )}
+        {avatar.hair !== "none" && avatar.hat !== "none" && (
+          <span
+            className={cn(
+              "absolute -right-1 bottom-2 opacity-90",
+              size === "sm" ? "text-[9px]" : "text-xs",
+            )}
+            aria-hidden
+          >
+            {HAIR_EMOJI[avatar.hair]}
+          </span>
+        )}
         {avatar.accessory !== "none" &&
           avatar.accessory !== "wings" &&
           avatar.accessory !== "halo" && (
@@ -246,7 +284,9 @@ const SECTIONS: {
   label: string;
   emoji: string;
 }[] = [
+  { key: "look", label: "Look", emoji: "👤" },
   { key: "skin", label: "Tono", emoji: "🎨" },
+  { key: "hair", label: "Pelo", emoji: "💇" },
   { key: "hat", label: "Sombrero", emoji: "👑" },
   { key: "cape", label: "Capa", emoji: "🧥" },
   { key: "wand", label: "Varita", emoji: "🪄" },
@@ -347,7 +387,7 @@ export function AvatarCustomizer() {
 
           {/* Category tabs — wrap, large touch targets, no cramped scroll chips */}
           <div
-            className="grid grid-cols-3 gap-2 sm:grid-cols-3 sm:gap-2.5"
+            className="grid grid-cols-4 gap-2 sm:grid-cols-4 sm:gap-2.5"
             role="tablist"
             aria-label="Categorías del avatar"
           >
