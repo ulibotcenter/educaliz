@@ -38,7 +38,7 @@ function friendlyError(err: unknown): string {
       ? String((err as { message: string }).message)
       : String(err ?? "");
   if (/duplicate|unique|23505/i.test(msg)) {
-    return "Este nome já está a ser usado. Escolhe outro.";
+    return "Este nombre ya está en uso. Elige otro.";
   }
   if (/Failed to fetch|NetworkError|fetch/i.test(msg)) {
     return CLOUD_ERROR_MSG;
@@ -154,6 +154,33 @@ export async function fetchAllProfiles(): Promise<ApiResult<StudentProfile[]>> {
       ok: true,
       data: (data as ProfileRow[] | null)?.map(rowToProfile) ?? [],
     };
+  } catch (e) {
+    return { ok: false, error: friendlyError(e) };
+  }
+}
+
+export async function fetchProfileByUsername(
+  username: string,
+): Promise<ApiResult<StudentProfile>> {
+  const sb = getSupabase();
+  if (!sb) return { ok: false, error: CLOUD_ERROR_MSG, code: "not_configured" };
+
+  try {
+    const u = username.trim().toLowerCase();
+    const { data, error } = await sb
+      .from("profiles")
+      .select("*")
+      .eq("username", u)
+      .maybeSingle();
+    if (error) return { ok: false, error: friendlyError(error), code: error.code };
+    if (!data) {
+      return {
+        ok: false,
+        error: "No encontramos ese usuario. Revisa el nombre.",
+        code: "not_found",
+      };
+    }
+    return { ok: true, data: rowToProfile(data as ProfileRow) };
   } catch (e) {
     return { ok: false, error: friendlyError(e) };
   }

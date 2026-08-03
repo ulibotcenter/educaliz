@@ -19,7 +19,7 @@ export function ReadingJournal() {
         <h1 className="font-display text-2xl font-semibold text-fg">Fichas de los dos libros</h1>
         <p className="text-sm text-muted">
           En las misiones de verano de Liz hay que leer dos libros y rellenar la ficha mágica.
-          Completa cada ficha para ganar la insignia de lectora.
+          Completa cada ficha para ganar la insignia de lector.
         </p>
       </div>
 

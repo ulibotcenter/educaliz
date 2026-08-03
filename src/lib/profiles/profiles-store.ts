@@ -31,6 +31,7 @@ import {
   deleteProfileRemote,
   fetchAllProfiles,
   fetchProfileById,
+  fetchProfileByUsername,
   insertProfile,
   isUsernameTakenRemote,
   updateProfileRemote,
@@ -44,7 +45,7 @@ import {
 } from "@/lib/profiles/referral";
 
 export const USERNAME_TAKEN_MSG =
-  "Este nome já está a ser usado. Escolhe outro.";
+  "Este nombre ya está en uso. Elige otro.";
 
 const LEGACY_GAME_KEY = "liz-academia-arcana-v4";
 
@@ -206,9 +207,34 @@ function withTombstone(
       : s.deletedUsernames;
   const profiles = { ...s.profiles };
   delete profiles[id];
+  const deviceRecentIds = s.deviceRecentIds.filter((x) => x !== id);
   const activeProfileId =
     s.activeProfileId === id ? null : s.activeProfileId;
-  return { deletedIds, deletedUsernames, profiles, activeProfileId };
+  return {
+    deletedIds,
+    deletedUsernames,
+    profiles,
+    deviceRecentIds,
+    activeProfileId,
+  };
+}
+
+/** Put profile at front of this device's recents (max 12). */
+function nextRecents(current: string[], id: string): string[] {
+  return [id, ...current.filter((x) => x !== id)].slice(0, 12);
+}
+
+function pruneToRecents(
+  profiles: Record<string, StudentProfile>,
+  recentIds: string[],
+  keepIds: string[] = [],
+): Record<string, StudentProfile> {
+  const keep = new Set([...recentIds, ...keepIds]);
+  const out: Record<string, StudentProfile> = {};
+  for (const id of keep) {
+    if (profiles[id]) out[id] = profiles[id]!;
+  }
+  return out;
 }
 
 type ProfilesState = {
@@ -217,6 +243,10 @@ type ProfilesState = {
   /** Tombstones so deleted profiles never reappear from cloud or cache */
   deletedIds: string[];
   deletedUsernames: string[];
+  /** Profile ids used on THIS device (privacy: never show foreign profiles) */
+  deviceRecentIds: string[];
+  /** Invisible family bucket for this browser/device */
+  deviceFamilyId: string;
   bootstrapped: boolean;
   loading: boolean;
   cloudEnabled: boolean;
@@ -236,6 +266,10 @@ type ProfilesState = {
   ) => Promise<UsernameCheck | { ok: false; error: string }>;
 
   createProfile: (input: CreateProfileInput) => Promise<CreateResult>;
+  loginWithUsername: (
+    username: string,
+    pin?: string,
+  ) => Promise<CreateResult>;
   deleteProfile: (id: string) => Promise<ActionResult>;
   selectProfile: (id: string, pin?: string) => Promise<ActionResult>;
   syncActiveFromGame: () => void;
@@ -262,6 +296,8 @@ export const useProfilesStore = create<ProfilesState>()(
       profiles: {},
       deletedIds: [],
       deletedUsernames: [],
+      deviceRecentIds: [],
+      deviceFamilyId: newId(),
       bootstrapped: false,
       loading: false,
       cloudEnabled: isSupabaseConfigured(),
@@ -270,10 +306,24 @@ export const useProfilesStore = create<ProfilesState>()(
 
       clearCloudError: () => set({ cloudError: null }),
 
-      listProfiles: () =>
-        Object.values(get().profiles).sort((a, b) =>
-          a.displayName.localeCompare(b.displayName, "es"),
-        ),
+      listProfiles: () => {
+        const { profiles, deviceRecentIds, deletedIds, deletedUsernames } =
+          get();
+        const out: StudentProfile[] = [];
+        for (const id of deviceRecentIds) {
+          if (deletedIds.includes(id)) continue;
+          const p = profiles[id];
+          if (!p) continue;
+          if (
+            p.username &&
+            deletedUsernames.includes(p.username.toLowerCase())
+          ) {
+            continue;
+          }
+          out.push(ensureInviteFields(p));
+        }
+        return out;
+      },
 
       getActive: () => {
         const id = get().activeProfileId;
@@ -416,8 +466,14 @@ export const useProfilesStore = create<ProfilesState>()(
               set((s) => {
                 const profiles = { ...s.profiles, [id]: profile };
                 if (referrerPatch) profiles[referrerPatch.id] = referrerPatch;
+                const deviceRecentIds = nextRecents(s.deviceRecentIds, id);
                 return {
-                  profiles,
+                  profiles: pruneToRecents(
+                    profiles,
+                    deviceRecentIds,
+                    referrerPatch ? [referrerPatch.id] : [],
+                  ),
+                  deviceRecentIds,
                   activeProfileId: id,
                   lastSyncOk: false,
                   cloudError:
@@ -467,9 +523,16 @@ export const useProfilesStore = create<ProfilesState>()(
                 ...s.profiles,
                 [saved.id]: saved,
               };
+              // Referrer patch stays in memory for XP but is NOT added to this device's recents
               if (referrerPatch) profiles[referrerPatch.id] = referrerPatch;
+              const deviceRecentIds = nextRecents(s.deviceRecentIds, saved.id);
               return {
-                profiles,
+                profiles: pruneToRecents(
+                  profiles,
+                  deviceRecentIds,
+                  referrerPatch ? [referrerPatch.id] : [],
+                ),
+                deviceRecentIds,
                 activeProfileId: saved.id,
                 lastSyncOk: true,
                 cloudError: null,
@@ -483,8 +546,14 @@ export const useProfilesStore = create<ProfilesState>()(
           set((s) => {
             const profiles = { ...s.profiles, [id]: profile };
             if (referrerPatch) profiles[referrerPatch.id] = referrerPatch;
+            const deviceRecentIds = nextRecents(s.deviceRecentIds, id);
             return {
-              profiles,
+              profiles: pruneToRecents(
+                profiles,
+                deviceRecentIds,
+                referrerPatch ? [referrerPatch.id] : [],
+              ),
+              deviceRecentIds,
               activeProfileId: id,
               cloudEnabled: false,
               cloudError: null,
@@ -540,7 +609,14 @@ export const useProfilesStore = create<ProfilesState>()(
 
           await get().flushActiveToCloud();
 
-          set({ activeProfileId: id });
+          set((s) => ({
+            activeProfileId: id,
+            deviceRecentIds: nextRecents(s.deviceRecentIds, id),
+            profiles: {
+              ...s.profiles,
+              [id]: profile!,
+            },
+          }));
           applyProgressToGame(profile.progress, profile.displayName);
 
           const eligible = isTournamentEligible(profile.progress);
@@ -554,6 +630,86 @@ export const useProfilesStore = create<ProfilesState>()(
             }
           }
           return { ok: true };
+        } finally {
+          set({ loading: false });
+        }
+      },
+
+      loginWithUsername: async (username, pin) => {
+        const cloudOn = isSupabaseConfigured();
+        set({ cloudError: null, loading: true, cloudEnabled: cloudOn });
+        try {
+          const check = validateUsername(username);
+          if (!check.ok) return { ok: false, error: check.error };
+
+          if (isTombstoned(get(), "", check.normalized)) {
+            return {
+              ok: false,
+              error: "Ese perfil fue borrado en este aparato.",
+            };
+          }
+
+          let profile: StudentProfile | null = null;
+
+          // Prefer cloud lookup by username (never list all profiles)
+          if (cloudOn) {
+            const remote = await fetchProfileByUsername(check.normalized);
+            if (remote.ok) {
+              const local = Object.values(get().profiles).find(
+                (p) => p.username === check.normalized,
+              );
+              profile = mergeProfilePreferRicher(local, remote.data);
+            } else if (remote.code === "not_found") {
+              // Fall through to local cache
+            } else {
+              set({ cloudError: remote.error, lastSyncOk: false });
+              // still try local
+            }
+          }
+
+          if (!profile) {
+            profile =
+              Object.values(get().profiles).find(
+                (p) => p.username === check.normalized,
+              ) ?? null;
+          }
+
+          if (!profile) {
+            return {
+              ok: false,
+              error:
+                "No encontramos ese usuario. Comprueba el nombre o créalo de nuevo.",
+            };
+          }
+
+          if (profile.pin) {
+            if (!pin || pin !== profile.pin) {
+              return {
+                ok: false,
+                error: "PIN incorrecto. Si no recuerdas el PIN, pide ayuda en casa.",
+              };
+            }
+          }
+
+          await get().flushActiveToCloud();
+
+          const saved = ensureInviteFields(profile);
+          set((s) => {
+            const deviceRecentIds = nextRecents(s.deviceRecentIds, saved.id);
+            const profiles = {
+              ...s.profiles,
+              [saved.id]: saved,
+            };
+            return {
+              profiles: pruneToRecents(profiles, deviceRecentIds),
+              deviceRecentIds,
+              activeProfileId: saved.id,
+              lastSyncOk: true,
+              cloudError: null,
+            };
+          });
+          applyProgressToGame(saved.progress, saved.displayName);
+          return { ok: true, profile: saved };
         } finally {
           set({ loading: false });
         }
@@ -687,34 +843,33 @@ export const useProfilesStore = create<ProfilesState>()(
         }
         set({ loading: true, cloudError: null });
         try {
-          const res = await fetchAllProfiles();
-          if (!res.ok) {
-            set({ cloudError: res.error, lastSyncOk: false });
-            return { ok: false, error: res.error };
-          }
-          const localAll = get().profiles;
-          const tomb = get();
+          // Privacy: only refresh profiles already known on THIS device
+          const recents = get().deviceRecentIds;
           const map: Record<string, StudentProfile> = {};
-          for (const remote of res.data) {
-            if (isTombstoned(tomb, remote.id, remote.username)) {
-              void deleteProfileRemote(remote.id, remote.username);
-              continue;
+          let anyErr: string | null = null;
+          for (const id of recents) {
+            if (isTombstoned(get(), id)) continue;
+            const local = get().profiles[id];
+            const remote = await fetchProfileById(id);
+            if (remote.ok) {
+              if (isTombstoned(get(), remote.data.id, remote.data.username)) {
+                void deleteProfileRemote(remote.data.id, remote.data.username);
+                continue;
+              }
+              map[id] = mergeProfilePreferRicher(local, remote.data);
+            } else if (local) {
+              map[id] = ensureInviteFields(local);
+              anyErr = remote.error;
             }
-            map[remote.id] = mergeProfilePreferRicher(
-              localAll[remote.id],
-              remote,
-            );
           }
-          for (const [id, p] of Object.entries(localAll)) {
-            if (map[id]) continue;
-            if (isTombstoned(tomb, id, p.username)) continue;
-            map[id] = ensureInviteFields(p);
-          }
-          set({
-            profiles: map,
-            lastSyncOk: true,
-            cloudError: null,
-          });
+          set((s) => ({
+            profiles: pruneToRecents(
+              { ...s.profiles, ...map },
+              s.deviceRecentIds,
+            ),
+            lastSyncOk: !anyErr,
+            cloudError: anyErr,
+          }));
           return { ok: true };
         } finally {
           set({ loading: false });
@@ -846,38 +1001,40 @@ export const useProfilesStore = create<ProfilesState>()(
         });
 
         try {
-          // 1) Load from Supabase when available
+          // 1) Privacy: only refresh THIS device's recents (never list all cloud profiles)
           if (cloudOn) {
-            const res = await fetchAllProfiles();
-            if (res.ok) {
-              const local = get().profiles;
-              const tomb = get();
-              const map: Record<string, StudentProfile> = {};
-              for (const remote of res.data) {
-                if (isTombstoned(tomb, remote.id, remote.username)) {
-                  // Re-attempt permanent cloud delete for tombstoned rows
-                  void deleteProfileRemote(remote.id, remote.username);
+            const recents = get().deviceRecentIds.filter(
+              (id) => !isTombstoned(get(), id),
+            );
+            const map: Record<string, StudentProfile> = {};
+            for (const id of recents) {
+              const local = get().profiles[id];
+              const remote = await fetchProfileById(id);
+              if (remote.ok) {
+                if (isTombstoned(get(), remote.data.id, remote.data.username)) {
+                  void deleteProfileRemote(remote.data.id, remote.data.username);
                   continue;
                 }
-                map[remote.id] = mergeProfilePreferRicher(
-                  local[remote.id],
-                  remote,
-                );
+                map[id] = mergeProfilePreferRicher(local, remote.data);
+              } else if (local) {
+                map[id] = ensureInviteFields(local);
               }
-              // Keep any local-only profiles (not yet on cloud, not deleted)
-              for (const [id, p] of Object.entries(local)) {
-                if (map[id]) continue;
-                if (isTombstoned(tomb, id, p.username)) continue;
-                map[id] = ensureInviteFields(p);
-              }
-              set({ profiles: map, lastSyncOk: true });
-            } else {
-              set({
-                cloudError: res.error,
-                lastSyncOk: false,
-              });
-              // Keep any cached profiles from persist
             }
+            // Keep local-only recents not yet on cloud
+            for (const id of recents) {
+              if (!map[id] && get().profiles[id]) {
+                map[id] = ensureInviteFields(get().profiles[id]!);
+              }
+            }
+            set((s) => ({
+              profiles: pruneToRecents(map, s.deviceRecentIds),
+              lastSyncOk: true,
+            }));
+          } else {
+            // Local only: drop anything not in recents
+            set((s) => ({
+              profiles: pruneToRecents(s.profiles, s.deviceRecentIds),
+            }));
           }
 
           // 2) Migrate legacy Liz save ONCE — never resurrect after delete
@@ -974,25 +1131,49 @@ export const useProfilesStore = create<ProfilesState>()(
               if (get().cloudEnabled) {
                 const up = await upsertProfileByUsername(profile);
                 if (up.ok) {
-                  set((s) => ({
-                    profiles: { ...s.profiles, [up.data.id]: up.data },
-                    activeProfileId: up.data.id,
-                  }));
+                  set((s) => {
+                    const deviceRecentIds = nextRecents(
+                      s.deviceRecentIds,
+                      up.data.id,
+                    );
+                    return {
+                      profiles: pruneToRecents(
+                        { ...s.profiles, [up.data.id]: up.data },
+                        deviceRecentIds,
+                      ),
+                      deviceRecentIds,
+                      activeProfileId: up.data.id,
+                    };
+                  });
                   applyProgressToGame(up.data.progress, up.data.displayName);
                 } else {
                   // Local fallback so Liz is not lost
-                  set((s) => ({
-                    profiles: { ...s.profiles, [id]: profile },
-                    activeProfileId: id,
-                    cloudError: up.error,
-                  }));
+                  set((s) => {
+                    const deviceRecentIds = nextRecents(s.deviceRecentIds, id);
+                    return {
+                      profiles: pruneToRecents(
+                        { ...s.profiles, [id]: profile },
+                        deviceRecentIds,
+                      ),
+                      deviceRecentIds,
+                      activeProfileId: id,
+                      cloudError: up.error,
+                    };
+                  });
                   applyProgressToGame(legacyProgress, displayName);
                 }
               } else {
-                set((s) => ({
-                  profiles: { ...s.profiles, [id]: profile },
-                  activeProfileId: id,
-                }));
+                set((s) => {
+                  const deviceRecentIds = nextRecents(s.deviceRecentIds, id);
+                  return {
+                    profiles: pruneToRecents(
+                      { ...s.profiles, [id]: profile },
+                      deviceRecentIds,
+                    ),
+                    deviceRecentIds,
+                    activeProfileId: id,
+                  };
+                });
                 applyProgressToGame(legacyProgress, displayName);
               }
               try {
@@ -1057,15 +1238,20 @@ export const useProfilesStore = create<ProfilesState>()(
     }),
     {
       name: "academia-arcana-profiles-v1",
-      version: 4,
+      version: 5,
       partialize: (s) => ({
         // Don't persist active session — always open on profile picker
         profiles: s.profiles,
         deletedIds: s.deletedIds,
         deletedUsernames: s.deletedUsernames,
+        deviceRecentIds: s.deviceRecentIds,
+        deviceFamilyId: s.deviceFamilyId,
       }),
       merge: (persisted, current) => {
-        const p = (persisted ?? {}) as Partial<typeof current>;
+        const p = (persisted ?? {}) as Partial<typeof current> & {
+          deviceRecentIds?: string[];
+          deviceFamilyId?: string;
+        };
         const deletedIds = Array.isArray(p.deletedIds)
           ? (p.deletedIds as string[])
           : current.deletedIds;
@@ -1074,23 +1260,41 @@ export const useProfilesStore = create<ProfilesState>()(
           : current.deletedUsernames;
         const rawProfiles =
           (p.profiles as typeof current.profiles) ?? current.profiles;
-        // Drop any tombstoned profiles from cache
+
+        // Device recents: if upgrading from pre-privacy, seed from local cache only
+        // (never pull the whole cloud). New devices start with [].
+        let deviceRecentIds = Array.isArray(p.deviceRecentIds)
+          ? [...p.deviceRecentIds]
+          : Object.keys(rawProfiles || {});
+
+        const deviceFamilyId =
+          typeof p.deviceFamilyId === "string" && p.deviceFamilyId
+            ? p.deviceFamilyId
+            : current.deviceFamilyId;
+
         const profiles: typeof current.profiles = {};
-        for (const [id, prof] of Object.entries(rawProfiles || {})) {
+        for (const id of deviceRecentIds) {
+          const prof = rawProfiles?.[id];
+          if (!prof) continue;
           if (deletedIds.includes(id)) continue;
           if (
-            prof?.username &&
+            prof.username &&
             deletedUsernames.includes(prof.username.toLowerCase())
           ) {
             continue;
           }
           profiles[id] = prof;
         }
+        // Drop recents that no longer exist
+        deviceRecentIds = deviceRecentIds.filter((id) => Boolean(profiles[id]));
+
         return {
           ...current,
           profiles,
           deletedIds,
           deletedUsernames,
+          deviceRecentIds,
+          deviceFamilyId,
           activeProfileId: null,
           bootstrapped: false,
           cloudEnabled: isSupabaseConfigured(),

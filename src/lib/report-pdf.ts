@@ -123,7 +123,7 @@ function wrapLine(text: string, max = 88): string[] {
 /** Multi-section PDF report for parents */
 export function buildProgressReportPdf(data: Partial<ProgressReportData> = {}): Blob {
   const d: ProgressReportData = { ...DEFAULT, ...data };
-  const name = d.studentName || "Alumna";
+  const name = d.studentName || "Alumno";
   const period = d.period || "Verano 2026";
   const acc =
     d.accuracyPercent === null || Number.isNaN(d.accuracyPercent)
@@ -160,7 +160,7 @@ export function buildProgressReportPdf(data: Partial<ProgressReportData> = {}): 
     "DATOS GENERALES",
     "================================================",
     "",
-    `Nombre de la alumna:  ${name}`,
+    `Nombre del alumno:  ${name}`,
     `Periodo:              ${period}`,
     `Nivel en el juego:    ${d.level} - ${d.levelTitle}`,
     `XP total:             ${d.xp}`,

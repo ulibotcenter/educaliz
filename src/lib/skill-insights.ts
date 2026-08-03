@@ -93,7 +93,7 @@ export function childFriendlyInsights(stats: Record<string, SkillStat>): {
   const weakLine =
     weak.length > 0
       ? `Puedes entrenar más: ${weak.map((s) => s.label).join(", ")}. ¡El Entrenamiento te espera sin presión!`
-      : "No hay áreas débiles claras: ¡estás equilibrada como una verdadera maga!";
+      : "No hay áreas débiles claras: ¡estás equilibrado como un verdadero mago!";
   return { hasData: true, strongLine, weakLine };
 }
 

@@ -124,7 +124,7 @@ export function HomeView() {
     {
       id: "progress" as const,
       title: "Sala de Trofeos",
-      subtitle: `${badges.length} insignias · roleta mágica`,
+      subtitle: `${badges.length} insignias · ruleta mágica`,
       icon: Trophy,
       accent: "text-primary bg-primary/15",
       progress: null as string | null,
@@ -352,7 +352,7 @@ export function HomeView() {
       <section className="rounded-2xl border border-border bg-card/80 p-4">
         <ThemeToggle />
         <label className="mt-3 flex max-w-xs flex-col gap-1 text-xs text-muted">
-          Tu nombre de maga
+          Tu nombre de mago
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}

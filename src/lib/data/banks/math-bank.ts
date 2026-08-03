@@ -468,7 +468,7 @@ export const MATH_BANK: MathQ[] = [
     "prompt": "Liz tenía 50 monedas de magia. Compra una capa por 28. ¿Cuántas le quedan?",
     "answer": 22,
     "hint": "Resta el precio.",
-    "explanation": "¡Casi! 50 − 28 = 22 monedas. ¡Ahorro de maga! La respuesta es 22. ¡Lee otra vez el hechizo y lo clavas!"
+    "explanation": "¡Casi! 50 − 28 = 22 monedas. ¡Ahorro de mago! La respuesta es 22. ¡Lee otra vez el hechizo y lo clavas!"
   },
   {
     "id": "m53",
@@ -1107,7 +1107,7 @@ export const MATH_BANK: MathQ[] = [
     "prompt": "Liz tiene 120 monedas. Gasta 1/3 en un libro y 25 en una varita. ¿Cuántas monedas le quedan?",
     "answer": 55,
     "hint": "1/3 de 120 es 40; resta 40 y 25.",
-    "explanation": "¡Casi! 120÷3=40 en el libro. 120−40=80. 80−25=55 monedas. ¡Presupuesto de maga!"
+    "explanation": "¡Casi! 120÷3=40 en el libro. 120−40=80. 80−25=55 monedas. ¡Presupuesto de mago!"
   },
   {
     "id": "m124",
@@ -1401,7 +1401,7 @@ export const MATH_BANK: MathQ[] = [
     "id": "m156",
     "level": 4,
     "type": "problema",
-    "prompt": "Una maga gasta 3/8 de 160 monedas. ¿Cuántas gasta?",
+    "prompt": "Un mago gasta 3/8 de 160 monedas. ¿Cuántas gasta?",
     "answer": 60,
     "hint": "160÷8=20; ×3.",
     "explanation": "¡Casi! 1/8 de 160 es 20. 3/8 = 60 monedas gastadas. Respira, repasa el paso y lo clavas en el siguiente intento."
@@ -1575,7 +1575,7 @@ export const MATH_BANK: MathQ[] = [
     "prompt": "¿5/6 de 72?",
     "answer": 60,
     "hint": "72÷6=12; ×5.",
-    "explanation": "¡Casi! 1/6 de 72 es 12. 5/6 = 60. ¡Fracción de maestra! Respira, repasa el paso y lo clavas en el siguiente intento."
+    "explanation": "¡Casi! 1/6 de 72 es 12. 5/6 = 60. ¡Fracción de maestro! Respira, repasa el paso y lo clavas en el siguiente intento."
   },
   {
     "id": "m176",
@@ -1656,7 +1656,7 @@ export const MATH_BANK: MathQ[] = [
     "prompt": "Liz gana 45 XP por misión y hace 8 misiones. Gasta 120 XP en la tienda. ¿Cuánta XP le queda de esas misiones?",
     "answer": 240,
     "hint": "45×8 − 120.",
-    "explanation": "¡Casi! 45×8=360. 360−120=240 XP. ¡Gestión de maga! Respira, repasa el paso y lo clavas en el siguiente intento."
+    "explanation": "¡Casi! 45×8=360. 360−120=240 XP. ¡Gestión de mago! Respira, repasa el paso y lo clavas en el siguiente intento."
   },
   {
     "id": "m185",

@@ -22,7 +22,7 @@ const emptyRuns = () => ({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }) as const;
 
 export function emptyProgress(displayName: string): PlayerProgress {
   return {
-    playerName: displayName || "Maga",
+    playerName: displayName || "Mago",
     points: 0,
     xp: 0,
     streak: 0,
@@ -125,7 +125,7 @@ export function progressToGamePatch(
   displayName: string,
 ): Partial<GameState> {
   return {
-    playerName: displayName || p.playerName || "Maga",
+    playerName: displayName || p.playerName || "Mago",
     points: p.points ?? 0,
     xp: p.xp ?? 0,
     streak: p.streak ?? 0,

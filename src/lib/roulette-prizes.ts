@@ -119,7 +119,7 @@ export const TEMP_BADGE_LABELS: Record<string, TempBadgeInfo> = {
     emoji: "🌀",
     blurb: "Un eco cósmico en tu capa (24 h)",
     effect:
-      "Al equiparla, un eco de estrellas brilla a tu alrededor. Ideal para sentirte como una maga del cielo.",
+      "Al equiparla, un eco de estrellas brilla a tu alrededor. Ideal para sentirte como un mago del cielo.",
     hue: "sky",
     aura: "stars",
   },

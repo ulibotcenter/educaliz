@@ -656,7 +656,7 @@ export const ENG_BANK: EngQ[] = [
     ],
     "answer": "friend",
     "hint": "For a girl friend in class: friend.",
-    "explanation": "¡Casi! La palabra correcta es «friend». En clase, «amiga» = friend. Girlfriend es pareja. ¡Contexto! Imagina la imagen en tu cabeza y repite la palabra en voz baja. ¡Tú puedes!"
+    "explanation": "¡Casi! La palabra correcta es «friend». En clase, «amigo» = friend. Girlfriend es pareja. ¡Contexto! Imagina la imagen en tu cabeza y repite la palabra en voz baja. ¡Tú puedes!"
   },
   {
     "id": "e42",

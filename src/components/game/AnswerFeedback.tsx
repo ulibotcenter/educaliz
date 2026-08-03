@@ -33,7 +33,7 @@ export function AnswerFeedback({
                 +{points} puntos de magia ✨
               </p>
             ) : (
-              <p className="mt-1.5 text-base text-muted">¡Sigue así, maga!</p>
+              <p className="mt-1.5 text-base text-muted">¡Sigue así, mago!</p>
             )}
             {body && (
               <p className="mt-2 text-base leading-relaxed text-muted">{body}</p>

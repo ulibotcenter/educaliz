@@ -1,19 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { CloudOff, Lock, Sparkles, Trash2, UserPlus, Users } from "lucide-react";
+import { CloudOff, Lock, LogIn, Sparkles, Trash2, UserPlus, Users } from "lucide-react";
 import {
   useProfilesStore,
   usernameAvailability,
   usernameAvailabilityAsync,
   USERNAME_TAKEN_MSG,
 } from "@/lib/profiles";
-import { normalizeInviteCode } from "@/lib/profiles/referral";
+import { normalizeInviteCode, isValidInviteCodeFormat } from "@/lib/profiles/referral";
 import { levelFromXp } from "@/lib/progression";
 import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
 import { LegalFooter } from "@/components/legal/LegalFooter";
 import { recordLegalAcceptance } from "@/lib/legal/consent";
 
-type Mode = "pick" | "create";
+type Mode = "pick" | "create" | "login";
 
 function readInviteFromUrl(): string {
   if (typeof window === "undefined") return "";
@@ -21,7 +21,10 @@ function readInviteFromUrl(): string {
     const q = new URLSearchParams(window.location.search);
     const raw =
       q.get("ref") || q.get("invite") || q.get("codigo") || q.get("code") || "";
-    return normalizeInviteCode(raw);
+    const code = normalizeInviteCode(raw);
+    // Invalid codes are ignored (field stays empty)
+    if (!code || !isValidInviteCodeFormat(code)) return "";
+    return code;
   } catch {
     return "";
   }
@@ -30,6 +33,7 @@ function readInviteFromUrl(): string {
 export function ProfileGate() {
   const listProfiles = useProfilesStore((s) => s.listProfiles);
   const createProfile = useProfilesStore((s) => s.createProfile);
+  const loginWithUsername = useProfilesStore((s) => s.loginWithUsername);
   const deleteProfile = useProfilesStore((s) => s.deleteProfile);
   const selectProfile = useProfilesStore((s) => s.selectProfile);
   const bootstrapFromLegacy = useProfilesStore((s) => s.bootstrapFromLegacy);
@@ -49,6 +53,8 @@ export function ProfileGate() {
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [pin, setPin] = useState("");
+  const [loginUser, setLoginUser] = useState("");
+  const [loginPin, setLoginPin] = useState("");
   const [friendCode, setFriendCode] = useState(urlInvite);
   const [legalAccepted, setLegalAccepted] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
@@ -72,9 +78,9 @@ export function ProfileGate() {
       setFriendCode(urlInvite);
       return;
     }
-    if (list.length === 0) setMode("create");
-    else setMode("pick");
-  }, [bootstrapped, list.length, urlInvite]);
+    // Always land on picker: recents for this device only (may be empty)
+    setMode((m) => (m === "create" || m === "login" ? m : "pick"));
+  }, [bootstrapped, urlInvite]);
 
   useEffect(() => {
     if (username.trim().length < 3) {
@@ -171,6 +177,25 @@ export function ProfileGate() {
     }
   }
 
+  async function onLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    clearCloudError();
+    setBusy(true);
+    try {
+      const r = await loginWithUsername(loginUser, loginPin.trim() || undefined);
+      if (!r.ok) {
+        setError(r.error);
+        return;
+      }
+      setLoginUser("");
+      setLoginPin("");
+      setMode("pick");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function onCreate(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -229,7 +254,8 @@ export function ProfileGate() {
           ¿Quién juega hoy?
         </h1>
         <p className="text-base text-muted">
-          Elige tu perfil o crea uno nuevo. Ideal para hermanas y amigos.
+          Solo ves perfiles de <strong className="text-fg">este aparato</strong>.
+          En otro sitio, entra con tu usuario y PIN.
         </p>
       </header>
 
@@ -358,12 +384,13 @@ export function ProfileGate() {
         <div className="space-y-4">
           <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-fg">
             <Users className="h-4 w-4 text-primary" />
-            Elige un perfil
+            Recientes en este aparato
           </p>
 
           {list.length === 0 ? (
             <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted">
-              Aún no hay perfiles. ¡Crea el primero!
+              Aún no hay perfiles recientes en este aparato. Crea uno nuevo o entra
+              con tu usuario.
             </p>
           ) : (
             <ul className="grid grid-cols-2 gap-3 sm:gap-4">
@@ -419,15 +446,111 @@ export function ProfileGate() {
               setMode("create");
               setError(null);
             }}
-            className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-primary/50 bg-primary/10 text-base font-bold text-primary"
+            className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-primary text-base font-bold text-primary-fg shadow-md"
           >
             <UserPlus className="h-5 w-5" />
             Crear nuevo perfil
           </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setMode("login");
+              setError(null);
+            }}
+            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border-2 border-border bg-card text-sm font-bold text-fg"
+          >
+            <LogIn className="h-4 w-4 text-primary" />
+            Entrar con un usuario existente
+          </button>
         </div>
       )}
 
-      {!pinFor && mode === "create" && (
+      
+      {!pinFor && mode === "login" && (
+        <form
+          onSubmit={(e) => void onLogin(e)}
+          className="space-y-4 rounded-2xl border border-border bg-card p-5"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <p className="font-display text-lg font-semibold text-fg">
+              Entrar con usuario
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setMode("pick");
+                setError(null);
+              }}
+              className="text-sm font-semibold text-primary underline-offset-2 hover:underline"
+            >
+              ← Volver
+            </button>
+          </div>
+          <p className="text-sm text-muted">
+            Usa el mismo nombre de usuario que creaste. Así el perfil se añade a
+            los recientes de este aparato.
+          </p>
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-fg" htmlFor="login-user">
+              Nombre de usuario
+            </label>
+            <div className="relative">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">
+                @
+              </span>
+              <input
+                id="login-user"
+                value={loginUser}
+                onChange={(e) =>
+                  setLoginUser(
+                    e.target.value.replace(/[^a-zA-Z0-9]/g, "").slice(0, 16),
+                  )
+                }
+                autoComplete="username"
+                className="min-h-12 w-full rounded-xl border border-border bg-surface py-2 pl-8 pr-4 text-base text-fg outline-none ring-primary focus:ring-2"
+                placeholder="ej: arcanito"
+                required
+                disabled={busy}
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5 rounded-xl border-2 border-amber-400/50 bg-amber-400/10 p-3">
+            <label className="text-sm font-semibold text-fg" htmlFor="login-pin">
+              PIN de 4 dígitos
+            </label>
+            <p className="rounded-lg bg-amber-400/20 px-2 py-1 text-xs font-bold uppercase tracking-wide text-amber-950 dark:text-amber-100">
+              No obligatorio, pero recomendado
+            </p>
+            <input
+              id="login-pin"
+              type="password"
+              inputMode="numeric"
+              maxLength={4}
+              value={loginPin}
+              onChange={(e) =>
+                setLoginPin(e.target.value.replace(/\D/g, "").slice(0, 4))
+              }
+              className="min-h-12 w-full rounded-xl border border-border bg-surface px-4 text-base tracking-widest text-fg outline-none ring-primary focus:ring-2"
+              placeholder="Si el perfil tiene PIN, escríbelo"
+              disabled={busy}
+            />
+            <p className="text-xs text-muted">
+              Si el perfil no tiene PIN, puedes dejarlo vacío.
+            </p>
+          </div>
+          <button
+            type="submit"
+            disabled={busy || loading || loginUser.trim().length < 3}
+            className="flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-primary text-base font-bold text-primary-fg disabled:opacity-60"
+          >
+            <LogIn className="h-5 w-5" />
+            {busy ? "Entrando…" : "Entrar y guardar en este aparato"}
+          </button>
+        </form>
+      )}
+
+{!pinFor && mode === "create" && (
         <form
           onSubmit={(e) => void onCreate(e)}
           className="space-y-4 rounded-2xl border border-border bg-card p-5"
@@ -436,18 +559,16 @@ export function ProfileGate() {
             <p className="font-display text-lg font-semibold text-fg">
               Nuevo perfil
             </p>
-            {list.length > 0 && (
-              <button
-                type="button"
-                onClick={() => {
-                  setMode("pick");
-                  setError(null);
-                }}
-                className="text-sm font-semibold text-primary underline-offset-2 hover:underline"
-              >
-                ← Ver perfiles
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => {
+                setMode("pick");
+                setError(null);
+              }}
+              className="text-sm font-semibold text-primary underline-offset-2 hover:underline"
+            >
+              ← Volver
+            </button>
           </div>
 
           <div className="space-y-1.5">
@@ -464,7 +585,7 @@ export function ProfileGate() {
               }
               autoComplete="username"
               className="min-h-12 w-full rounded-xl border border-border bg-surface px-4 text-base text-fg outline-none ring-primary focus:ring-2"
-              placeholder="ej: lizmaga"
+              placeholder="ej: arcanito"
               required
               disabled={busy}
             />
@@ -497,10 +618,13 @@ export function ProfileGate() {
             />
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 rounded-xl border-2 border-amber-400/50 bg-amber-400/10 p-3">
             <label className="text-sm font-semibold text-fg" htmlFor="pin">
-              PIN de 4 dígitos (opcional)
+              PIN de 4 dígitos
             </label>
+            <p className="rounded-lg bg-amber-400/20 px-2 py-1 text-xs font-bold uppercase tracking-wide text-amber-950 dark:text-amber-100">
+              No obligatorio, pero recomendado
+            </p>
             <input
               id="pin"
               type="password"
@@ -511,9 +635,12 @@ export function ProfileGate() {
                 setPin(e.target.value.replace(/\D/g, "").slice(0, 4))
               }
               className="min-h-12 w-full rounded-xl border border-border bg-surface px-4 text-base tracking-widest text-fg outline-none ring-primary focus:ring-2"
-              placeholder="Opcional · protege tu perfil"
+              placeholder="Protege tu perfil de otros niños"
               disabled={busy}
             />
+            <p className="text-xs text-muted">
+              Con PIN, solo quien lo sepa podrá entrar en otro aparato.
+            </p>
           </div>
 
           <div className="space-y-1.5 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 p-3">
@@ -521,7 +648,7 @@ export function ProfileGate() {
               className="text-sm font-semibold text-fg"
               htmlFor="friendCode"
             >
-              Código de amiga (opcional) – gana XP extra
+              Código de amigo (opcional) – gana XP extra
             </label>
             <input
               id="friendCode"
@@ -539,7 +666,7 @@ export function ProfileGate() {
               disabled={busy}
             />
             <p className="text-xs text-muted">
-              Si te invitaron, pega el código aquí. Tú ganas +20 XP y tu amiga
+              Si te invitaron, pega el código aquí. Tú ganas +20 XP y tu amigo
               +30 XP.
             </p>
           </div>

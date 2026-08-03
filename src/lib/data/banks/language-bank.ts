@@ -79,17 +79,17 @@ export const LANG_BANK: LangQ[] = [
     "level": 1,
     "title": "Separa: ¿qué es el predicado?",
     "tip": "Todo lo que no es sujeto suele ser predicado.",
-    "text": "Mis amigas leen en silencio.",
+    "text": "Mis amigos leen en silencio.",
     "options": [
       "leen en silencio",
-      "Mis amigas",
+      "Mis amigos",
       "en silencio",
       "Mis"
     ],
     "answer": "leen en silencio",
-    "explanation": "¡Casi! Sujeto = «Mis amigas». Predicado = «leen en silencio». ¡Separación perfecta!",
+    "explanation": "¡Casi! Sujeto = «Mis amigos». Predicado = «leen en silencio». ¡Separación perfecta!",
     "skillTag": "predicado",
-    "hint": "¿Qué hacen mis amigas?",
+    "hint": "¿Qué hacen mis amigos?",
     "showSentence": true
   },
   {
@@ -331,17 +331,17 @@ export const LANG_BANK: LangQ[] = [
     "level": 1,
     "title": "¿Predicado completo?",
     "tip": "Todo lo que no es sujeto.",
-    "text": "Mi hermana dibuja runas azules.",
+    "text": "Mi hermano dibuja runas azules.",
     "options": [
       "runas azules",
       "dibuja runas azules",
       "dibuja",
-      "Mi hermana"
+      "Mi hermano"
     ],
     "answer": "dibuja runas azules",
     "explanation": "¡Casi! El predicado incluye verbo y complementos: «dibuja runas azules».",
     "skillTag": "predicado",
-    "hint": "¿Qué hace mi hermana?",
+    "hint": "¿Qué hace mi hermano?",
     "showSentence": true
   },
   {
@@ -483,7 +483,7 @@ export const LANG_BANK: LangQ[] = [
       "El lápis mágico"
     ],
     "answer": "El lápiz mágico",
-    "explanation": "¡Casi! «Lápiz» termina en z; «mágico» lleva tilde en á. ¡Detalle de maga!",
+    "explanation": "¡Casi! «Lápiz» termina en z; «mágico» lleva tilde en á. ¡Detalle de mago!",
     "skillTag": "ortografia",
     "hint": "z final",
     "showSentence": false
@@ -591,7 +591,7 @@ export const LANG_BANK: LangQ[] = [
       "Enunciativa negativa"
     ],
     "answer": "Enunciativa negativa",
-    "explanation": "¡Casi! Afirma (enunciativa) pero con «no»: negativa. ¡Matices de hechicera!",
+    "explanation": "¡Casi! Afirma (enunciativa) pero con «no»: negativa. ¡Matices de hechicero!",
     "skillTag": "tipo_oracion",
     "hint": "Hay un «no»",
     "showSentence": false
@@ -961,14 +961,14 @@ export const LANG_BANK: LangQ[] = [
     "level": 4,
     "title": "Análisis: sujeto",
     "tip": "Largo y preciso.",
-    "text": "La maestra de runas del tercer piso explica el hechizo.",
+    "text": "El maestro de runas del tercer piso explica el hechizo.",
     "options": [
-      "La maestra",
+      "El maestro",
       "del tercer piso",
-      "La maestra de runas del tercer piso",
+      "El maestro de runas del tercer piso",
       "explica el hechizo"
     ],
-    "answer": "La maestra de runas del tercer piso",
+    "answer": "El maestro de runas del tercer piso",
     "explanation": "¡Casi! Todo el grupo nominal extenso es el sujeto. El predicado empieza en «explica».",
     "skillTag": "sujeto",
     "hint": "Hasta antes del verbo",
@@ -1645,14 +1645,14 @@ export const LANG_BANK: LangQ[] = [
     "level": 5,
     "title": "Complementos múltiples",
     "tip": "Orden lógico.",
-    "text": "Ayer di el regalo a mi amiga en el patio.",
+    "text": "Ayer di el regalo a mi amigo en el patio.",
     "options": [
       "Solo hay CD",
-      "Ayer=tiempo; el regalo=CD; a mi amiga=CI; en el patio=lugar",
+      "Ayer=tiempo; el regalo=CD; a mi amigo=CI; en el patio=lugar",
       "Todo es sujeto",
       "Solo hay CI"
     ],
-    "answer": "Ayer=tiempo; el regalo=CD; a mi amiga=CI; en el patio=lugar",
+    "answer": "Ayer=tiempo; el regalo=CD; a mi amigo=CI; en el patio=lugar",
     "explanation": "¡Casi! Varios complementos en una sola oración. ¡Mapa completo de funciones!",
     "skillTag": "complemento",
     "hint": "¿Cuándo? ¿Qué? ¿A quién? ¿Dónde?",
@@ -1861,12 +1861,12 @@ export const LANG_BANK: LangQ[] = [
     "level": 5,
     "title": "Lexico: interjección",
     "tip": "Emoción suelta.",
-    "text": "¡Hola! Bienvenida a la clase.",
+    "text": "¡Hola! Bienvenido a la clase.",
     "options": [
       "¡Hola!",
       "a la clase",
-      "Bienvenida a la clase",
-      "Bienvenida"
+      "Bienvenido a la clase",
+      "Bienvenido"
     ],
     "answer": "¡Hola!",
     "explanation": "¡Casi! «¡Hola!» es interjección: emoción o saludo suelto. ¡Primer hechizo social!",
@@ -2265,7 +2265,7 @@ export const LANG_BANK: LangQ[] = [
       "Resuelve el problema"
     ],
     "answer": "con calma",
-    "explanation": "¡Casi! «con calma» responde a ¿cómo? → complemento circunstancial de modo. ¡Estilo de maga paciente!",
+    "explanation": "¡Casi! «con calma» responde a ¿cómo? → complemento circunstancial de modo. ¡Estilo de mago paciente!",
     "skillTag": "complemento",
     "hint": "¿Cómo resuelve?",
     "showSentence": true

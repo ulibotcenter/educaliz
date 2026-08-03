@@ -36,7 +36,7 @@ function CountdownBlock() {
         <p className="font-display text-xl font-semibold text-success">
           ¡El {TOURNAMENT_LABEL} ha comenzado!
         </p>
-        <p className="mt-1 text-sm text-muted">¡Que gane la mejor maga!</p>
+        <p className="mt-1 text-sm text-muted">¡Que gane el mejor mago!</p>
       </div>
     );
   }
@@ -141,12 +141,12 @@ export function RankingView() {
             Ranking de la Academia
           </p>
           <h1 className="font-display text-2xl font-semibold text-fg sm:text-3xl">
-            Tabla de magas
+            Tabla de magos
           </h1>
           <p className="text-base text-muted">
             {cloudEnabled
-              ? "Datos reales de la nube · ordenado por XP total."
-              : "Ranking local · conecta la nube en el despliegue."}
+              ? "Perfiles conocidos en este aparato · ordenado por XP (la nube guarda el progreso)."
+              : "Ranking en este aparato · la nube no está configurada aún."}
           </p>
         </div>
         <button

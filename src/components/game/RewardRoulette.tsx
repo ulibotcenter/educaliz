@@ -247,7 +247,7 @@ export function RewardRoulette() {
         {spinning
           ? "✨ Girando la magia…"
           : canSpin
-            ? "¡Girar la roleta!"
+            ? "¡Girar la ruleta!"
             : "Sin giros ahora"}
       </button>
 
@@ -284,7 +284,7 @@ export function RewardRoulette() {
         </p>
         {tempList.length === 0 ? (
           <p className="text-xs text-muted">
-            Aún no tienes insignias temporales. ¡Gíralas en la roleta!
+            Aún no tienes insignias temporales. ¡Gíralas en la ruleta!
           </p>
         ) : (
           <ul className="flex flex-wrap gap-2">

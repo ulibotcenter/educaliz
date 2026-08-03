@@ -70,7 +70,7 @@ export function missionMessages(
   }
   return {
     title: `¡Ánimo, ${name}!`,
-    body: "Errar también enseña a las grandes magas. Vuelve al Entrenamiento sin prisa: cada intento te hace más fuerte.",
+    body: "Errar también enseña a los grandes magos. Vuelve al Entrenamiento sin prisa: cada intento te hace más fuerte.",
   };
 }
 
@@ -89,7 +89,7 @@ export function correctCheer(streak: number, area: "math" | "language" | "englis
   if (streak >= 2) {
     return area === "english"
       ? "Yes! Two in a row!"
-      : "¡Dos seguidos! Qué hechicera.";
+      : "¡Dos seguidos! Qué hechicero.";
   }
   if (area === "math") return "¡Correcto! Magia de números.";
   if (area === "language") return "¡Bien! La biblioteca te sonríe.";

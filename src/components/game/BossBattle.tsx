@@ -186,7 +186,7 @@ export function BossBattle({ zone }: { zone: Zone }) {
             </p>
             <p className="mt-2 text-base leading-relaxed text-muted">
               Has vencido la prueba final. Premio: insignia especial, +80 XP, +50 puntos y un
-              capítulo nuevo en tu grimorio. ¡Eres una gran maga!
+              capítulo nuevo en tu grimorio. ¡Eres un gran mago!
             </p>
           </div>
         )}

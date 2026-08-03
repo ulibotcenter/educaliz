@@ -8,7 +8,7 @@ export const LEVEL_META: Record<DiffLevel, { name: string; emoji: string; blurb:
   2: { name: "Llama", emoji: "🔥", blurb: "Un poco más de magia" },
   3: { name: "Hechizo", emoji: "🪄", blurb: "Retos intermedios" },
   4: { name: "Arcano", emoji: "📜", blurb: "Nivel avanzado" },
-  5: { name: "Maestría", emoji: "👑", blurb: "¡Desafío de maga!" },
+  5: { name: "Maestría", emoji: "👑", blurb: "¡Desafío de mago!" },
 };
 
 /** Alias de nombres de nivel (UI / informes) */

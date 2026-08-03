@@ -142,7 +142,7 @@ export function ProgressView() {
         <div className="rounded-xl border border-accent/30 bg-accent/10 p-4">
           <p className="text-sm font-semibold text-accent">Áreas a mejorar</p>
           {weak.length === 0 ? (
-            <p className="mt-2 text-sm text-muted">¡Equilibrada! Sigue así.</p>
+            <p className="mt-2 text-sm text-muted">¡Equilibrado! Sigue así.</p>
           ) : (
             <ul className="mt-2 space-y-1 text-sm text-fg">
               {weak.map((s) => (
@@ -177,7 +177,7 @@ export function ProgressView() {
         </div>
         {activeTemp.length === 0 ? (
           <p className="text-sm text-muted">
-            Gira la roleta para ganar Brisa Arcana, Llama Fugaz o Eco de las Estrellas.
+            Gira la ruleta para ganar Brisa Arcana, Llama Fugaz o Eco de las Estrellas.
           </p>
         ) : (
           <ul className="flex flex-wrap gap-2">
