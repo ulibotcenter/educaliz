@@ -99,7 +99,8 @@ export type AvatarConfig = {
     | "ice"
     | "silver"
     | "aurora"
-    | "starlight";
+    | "starlight"
+    | "cosmic";
   wand:
     | "violet"
     | "gold"
@@ -243,6 +244,13 @@ export const AVATAR_OPTIONS = {
       shopId: "shop-cape-starlight",
       tag: "tienda",
     },
+    {
+      id: "cosmic" as const,
+      label: "Capa cósmica",
+      emoji: "🌌",
+      shopId: "shop-cape-cosmic",
+      tag: "tienda",
+    },
   ],
   wand: [
     { id: "violet" as const, label: "Varita violeta", emoji: "🪄", free: true, tag: "base" },
@@ -340,28 +348,48 @@ export type XpShopItem = {
   cost: number;
   slot: keyof typeof AVATAR_OPTIONS;
   optionId: string;
-  rarity: "rara" | "épica" | "legendaria";
+  rarity: "común" | "rara" | "épica" | "legendaria" | "mítica";
 };
 
 export const XP_SHOP: XpShopItem[] = [
   {
     id: "shop-cape-aurora",
     name: "Capa Aurora",
-    blurb: "Colores del amanecer mágico",
+    blurb: "Colores suaves del amanecer",
     emoji: "🌈",
-    cost: 40,
+    cost: 35,
     slot: "cape",
     optionId: "aurora",
-    rarity: "rara",
+    rarity: "común",
   },
   {
     id: "shop-cape-silver",
     name: "Capa de Plata",
     blurb: "Brillo de luna fría",
     emoji: "🤍",
-    cost: 55,
+    cost: 45,
     slot: "cape",
     optionId: "silver",
+    rarity: "común",
+  },
+  {
+    id: "shop-wand-rainbow",
+    name: "Varita Arcoíris",
+    blurb: "Un hechizo de todos los colores",
+    emoji: "🌈",
+    cost: 90,
+    slot: "wand",
+    optionId: "rainbow",
+    rarity: "rara",
+  },
+  {
+    id: "shop-hat-phoenix",
+    name: "Cresta Fénix",
+    blurb: "Sombrero de fuego suave",
+    emoji: "🔥",
+    cost: 100,
+    slot: "hat",
+    optionId: "phoenix",
     rarity: "rara",
   },
   {
@@ -369,47 +397,27 @@ export const XP_SHOP: XpShopItem[] = [
     name: "Capa Estelar",
     blurb: "Cosida con polvo de estrellas",
     emoji: "✨",
-    cost: 65,
+    cost: 110,
     slot: "cape",
     optionId: "starlight",
-    rarity: "épica",
-  },
-  {
-    id: "shop-wand-rainbow",
-    name: "Varita Arcoíris",
-    blurb: "Un hechizo de todos los colores",
-    emoji: "🌈",
-    cost: 70,
-    slot: "wand",
-    optionId: "rainbow",
-    rarity: "épica",
-  },
-  {
-    id: "shop-hat-phoenix",
-    name: "Cresta Fénix",
-    blurb: "Sombrero de fuego suave",
-    emoji: "🔥",
-    cost: 80,
-    slot: "hat",
-    optionId: "phoenix",
-    rarity: "épica",
+    rarity: "rara",
   },
   {
     id: "shop-wand-comet",
     name: "Varita Cometa",
     blurb: "Deja una estela brillante al girar",
     emoji: "☄️",
-    cost: 85,
+    cost: 120,
     slot: "wand",
     optionId: "comet",
-    rarity: "épica",
+    rarity: "rara",
   },
   {
     id: "shop-acc-wings",
     name: "Alas de Luz",
     blurb: "Vuela un poquito con la magia",
     emoji: "🪽",
-    cost: 90,
+    cost: 160,
     slot: "accessory",
     optionId: "wings",
     rarity: "épica",
@@ -419,17 +427,17 @@ export const XP_SHOP: XpShopItem[] = [
     name: "Corona Nebulosa",
     blurb: "Galaxias diminutas en la frente",
     emoji: "🌌",
-    cost: 95,
+    cost: 180,
     slot: "hat",
     optionId: "nebula",
-    rarity: "legendaria",
+    rarity: "épica",
   },
   {
     id: "shop-acc-halo",
     name: "Halo de Estrellas",
     blurb: "Un círculo de luz que te sigue",
     emoji: "💫",
-    cost: 100,
+    cost: 220,
     slot: "accessory",
     optionId: "halo",
     rarity: "legendaria",
@@ -437,12 +445,22 @@ export const XP_SHOP: XpShopItem[] = [
   {
     id: "shop-familiar-unicorn",
     name: "Unicornio",
-    blurb: "El familiar más soñado",
+    blurb: "El familiar más soñado de la Academia",
     emoji: "🦄",
-    cost: 110,
+    cost: 250,
     slot: "familiar",
     optionId: "unicorn",
     rarity: "legendaria",
+  },
+  {
+    id: "shop-cape-cosmic",
+    name: "Capa del Cosmos",
+    blurb: "¡La más especial! Una galaxia entera en tu espalda",
+    emoji: "🌠",
+    cost: 500,
+    slot: "cape",
+    optionId: "cosmic",
+    rarity: "mítica",
   },
 ];
 
