@@ -262,7 +262,11 @@ export const useProfilesStore = create<ProfilesState>()(
       checkUsernameAsync: async (raw, exceptId) => {
         const local = get().checkUsername(raw, exceptId);
         if (!local.ok) return local;
-        if (!get().cloudEnabled) return local;
+        if (!isSupabaseConfigured()) {
+          set({ cloudEnabled: false });
+          return local;
+        }
+        set({ cloudEnabled: true });
 
         const remote = await isUsernameTakenRemote(local.normalized, exceptId);
         if (!remote.ok) {
@@ -274,7 +278,8 @@ export const useProfilesStore = create<ProfilesState>()(
       },
 
       createProfile: async (input) => {
-        set({ cloudError: null, loading: true });
+        const cloudOn = isSupabaseConfigured();
+        set({ cloudError: null, loading: true, cloudEnabled: cloudOn });
         try {
           const check = await get().checkUsernameAsync(input.username);
           if (!check.ok) return { ok: false, error: check.error };
@@ -305,7 +310,7 @@ export const useProfilesStore = create<ProfilesState>()(
           if (rawFriend) {
             const code = normalizeInviteCode(rawFriend);
             // Prefer cloud list if available
-            if (get().cloudEnabled) {
+            if (cloudOn || get().cloudEnabled) {
               const all = await fetchAllProfiles();
               if (all.ok) {
                 set((s) => ({
@@ -353,7 +358,8 @@ export const useProfilesStore = create<ProfilesState>()(
             progress,
           });
 
-          if (get().cloudEnabled) {
+          if (cloudOn || isSupabaseConfigured()) {
+            set({ cloudEnabled: true });
             const remote = await insertProfile(profile);
             if (!remote.ok) {
               set({ cloudError: remote.error, lastSyncOk: false });
@@ -410,13 +416,15 @@ export const useProfilesStore = create<ProfilesState>()(
           }
 
           // Offline / no Supabase env — local only
+          const stillCloud = isSupabaseConfigured();
           set((s) => {
             const profiles = { ...s.profiles, [id]: profile };
             if (referrerPatch) profiles[referrerPatch.id] = referrerPatch;
             return {
               profiles,
               activeProfileId: id,
-              cloudError: isSupabaseConfigured()
+              cloudEnabled: stillCloud,
+              cloudError: stillCloud
                 ? null
                 : "Modo local: la nube no está configurada todavía.",
             };
@@ -429,12 +437,13 @@ export const useProfilesStore = create<ProfilesState>()(
       },
 
       selectProfile: async (id, pin) => {
-        set({ cloudError: null, loading: true });
+        const cloudOn = isSupabaseConfigured();
+        set({ cloudError: null, loading: true, cloudEnabled: cloudOn });
         try {
           let profile = get().profiles[id];
 
           // Prefer fresh cloud copy
-          if (get().cloudEnabled) {
+          if (cloudOn) {
             const remote = await fetchProfileById(id);
             if (remote.ok) {
               const local = get().profiles[id];
@@ -528,7 +537,11 @@ export const useProfilesStore = create<ProfilesState>()(
         }));
 
         // Debounced cloud write
-        if (!get().cloudEnabled) return;
+        if (!isSupabaseConfigured()) {
+          set({ cloudEnabled: false });
+          return;
+        }
+        set({ cloudEnabled: true });
         if (syncTimer) clearTimeout(syncTimer);
         syncTimer = setTimeout(() => {
           void get().flushActiveToCloud();
@@ -536,6 +549,11 @@ export const useProfilesStore = create<ProfilesState>()(
       },
 
       flushActiveToCloud: async () => {
+        if (!isSupabaseConfigured()) {
+          set({ cloudEnabled: false });
+          return;
+        }
+        set({ cloudEnabled: true });
         const id = get().activeProfileId;
         if (!id) return;
         // Ensure latest local snapshot first
@@ -586,7 +604,9 @@ export const useProfilesStore = create<ProfilesState>()(
       },
 
       refreshFromCloud: async () => {
-        if (!get().cloudEnabled) {
+        const cloudOn = isSupabaseConfigured();
+        set({ cloudEnabled: cloudOn });
+        if (!cloudOn) {
           return {
             ok: false,
             error: "La nube no está configurada todavía.",
@@ -622,14 +642,15 @@ export const useProfilesStore = create<ProfilesState>()(
       },
 
       deleteProfile: async (id) => {
-        set({ cloudError: null, loading: true });
+        const cloudOn = isSupabaseConfigured();
+        set({ cloudError: null, loading: true, cloudEnabled: cloudOn });
         try {
           const profile = get().profiles[id];
           if (!profile) {
             return { ok: false, error: "No encontramos ese perfil." };
           }
 
-          if (get().cloudEnabled) {
+          if (cloudOn) {
             const remote = await deleteProfileRemote(id);
             if (!remote.ok) {
               set({ cloudError: remote.error, lastSyncOk: false });
@@ -684,15 +705,22 @@ export const useProfilesStore = create<ProfilesState>()(
 
       bootstrapFromLegacy: async () => {
         if (get().bootstrapped) return;
+        const cloudOn = isSupabaseConfigured();
+        if (typeof console !== "undefined") {
+          console.info(
+            "[Academia Arcana] bootstrap · cloudEnabled=",
+            cloudOn,
+          );
+        }
         set({
           loading: true,
-          cloudEnabled: isSupabaseConfigured(),
+          cloudEnabled: cloudOn,
           cloudError: null,
         });
 
         try {
           // 1) Load from Supabase when available
-          if (get().cloudEnabled) {
+          if (cloudOn) {
             const res = await fetchAllProfiles();
             if (res.ok) {
               const local = get().profiles;
@@ -871,12 +899,14 @@ export const useProfilesStore = create<ProfilesState>()(
       }),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<typeof current>;
+        // Only restore profiles — never trust cached cloudEnabled (env can change per deploy)
         return {
           ...current,
-          ...p,
-          // Never auto-enter a profile on load (siblings share the device)
+          profiles: (p.profiles as typeof current.profiles) ?? current.profiles,
           activeProfileId: null,
           bootstrapped: false,
+          cloudEnabled: isSupabaseConfigured(),
+          cloudError: null,
         };
       },
     },

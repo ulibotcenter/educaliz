@@ -130,6 +130,8 @@ export default defineConfig(({ command }) => ({
     port: 8080,
     strictPort: true,
   },
+  // Ensure VITE_SUPABASE_* from the host/Vercel env are exposed to the client.
+  envPrefix: ["VITE_"],
   resolve: { tsconfigPaths: true },
   plugins: [
     pgliteBootstrapPlugin(),
