@@ -16,7 +16,7 @@ import { AvatarPortrait } from "@/components/game/AvatarView";
 import { ProgressPanel } from "@/components/game/ProgressPanel";
 import { ThemeToggle } from "@/components/game/ThemeToggle";
 import { xpProgress } from "@/lib/progression";
-import { TournamentBanner } from "@/components/game/TournamentBanner";
+import { InviteFriendCard } from "@/components/game/InviteFriendCard";
 import { useProfilesStore } from "@/lib/profiles";
 
 export function HomeView() {
@@ -35,7 +35,10 @@ export function HomeView() {
   const setPlayMode = useGameStore((s) => s.setPlayMode);
   const dailyPartsState = useGameStore((s) => s.dailyParts);
   const prog = xpProgress(xp);
-  const active = useProfilesStore((s) => s.getActive());
+  const activeId = useProfilesStore((s) => s.activeProfileId);
+  const active = useProfilesStore((s) =>
+    activeId ? s.profiles[activeId] ?? null : null,
+  );
 
   const day = new Date().getDate();
   const dailyLevel = (Math.min(5, 1 + (day % 5)) || 1) as DiffLevel;
@@ -158,7 +161,12 @@ export function HomeView() {
         </div>
       </section>
 
-      <TournamentBanner />
+      {/* Friend invite — under profile card */}
+      <div className="flex justify-end">
+        <div className="w-full max-w-md sm:ml-auto">
+          <InviteFriendCard />
+        </div>
+      </div>
 
       {/* Misión de hoy — hero, first real action */}
       <section className="relative overflow-hidden rounded-2xl border-[3px] border-danger/55 bg-gradient-to-br from-danger/25 via-card to-primary/15 p-5 shadow-[0_0_36px_color-mix(in_oklab,var(--color-danger)_18%,transparent)] sm:p-6">
@@ -356,6 +364,17 @@ export function HomeView() {
 
       <p className="pb-2 text-center text-sm text-muted">
         Consejo: un poquito cada día = magia que se queda.
+      </p>
+
+      {/* Torneo — mención discreta al final */}
+      <p className="torneo-soft-link pt-1 text-center text-xs text-muted">
+        <button
+          type="button"
+          onClick={() => setView("ranking")}
+          className="inline-flex items-center gap-1 font-medium text-muted underline-offset-2 hover:text-primary hover:underline"
+        >
+          Torneo de la Academia · ver cuenta atrás y ranking
+        </button>
       </p>
     </div>
   );

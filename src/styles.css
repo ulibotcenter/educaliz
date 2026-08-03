@@ -210,3 +210,39 @@ body[data-theme="trueno"] {
 .temp-badge-pulse {
   animation: temp-badge-pulse 2.4s ease-in-out infinite;
 }
+
+@keyframes roulette-glow-pulse {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 0.95; transform: scale(1.03); }
+}
+
+.roulette-glow-pulse {
+  animation: roulette-glow-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes temp-aura-pulse {
+  0%, 100% { opacity: 0.55; transform: translate(-50%, -50%) scale(1.15); }
+  50% { opacity: 0.9; transform: translate(-50%, -50%) scale(1.28); }
+}
+
+.temp-aura-breeze,
+.temp-aura-ember,
+.temp-aura-stars {
+  animation: temp-aura-pulse 2.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.temp-aura-breeze {
+  background: radial-gradient(circle, color-mix(in oklab, #3dd6a0 55%, transparent) 0%, transparent 70%);
+  box-shadow: 0 0 24px color-mix(in oklab, #3dd6a0 45%, transparent);
+}
+
+.temp-aura-ember {
+  background: radial-gradient(circle, color-mix(in oklab, #ff7a6e 55%, transparent) 0%, transparent 70%);
+  box-shadow: 0 0 24px color-mix(in oklab, #ff7a6e 45%, transparent);
+}
+
+.temp-aura-stars {
+  background: radial-gradient(circle, color-mix(in oklab, #6ec8f0 55%, transparent) 0%, transparent 70%);
+  box-shadow: 0 0 24px color-mix(in oklab, #7c9cff 50%, transparent);
+}

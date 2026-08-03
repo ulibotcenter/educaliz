@@ -19,6 +19,7 @@ import { StoryModal } from "@/components/game/StoryModal";
 import { ThemeToggle } from "@/components/game/ThemeToggle";
 import { ThemeApplier } from "@/components/game/ThemeApplier";
 import { CelebrationHost } from "@/components/game/CelebrationHost";
+import { LegalFooter } from "@/components/legal/LegalFooter";
 
 const NAV: { id: ViewId; label: string; icon: typeof Home }[] = [
   { id: "home", label: "Mapa", icon: Home },
@@ -143,9 +144,10 @@ export function Shell({ children }: { children: ReactNode }) {
 
       <main
         key={view}
-        className="mx-auto w-full max-w-5xl flex-1 animate-fade-in px-4 py-5 pb-36 sm:px-5 sm:py-8 sm:pb-36"
+        className="mx-auto w-full max-w-5xl flex-1 animate-fade-in px-4 py-5 pb-44 sm:px-5 sm:py-8 sm:pb-44"
       >
         {children}
+        <LegalFooter className="mt-8 border-t border-border/50 pt-4 pb-2" />
       </main>
 
       <StoryModal />

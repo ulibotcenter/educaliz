@@ -126,6 +126,8 @@ export type GameState = {
   rouletteSpins: number;
   lastRouletteDate: string | null;
   tempBadges: Record<string, number>;
+  /** Equipped temporary aura badge id (or null) */
+  equippedTempBadge: string | null;
   ownedShopItems: string[];
   lastAppOpen: string | null;
   view: ViewId;
@@ -139,6 +141,7 @@ export type GameState = {
   clearSession: () => void;
   completeSession: () => void;
   spinRoulette: (sliceId: string) => string;
+  equipTempBadge: (id: string | null) => void;
   touchActivity: () => void;
   startBoss: (zone: "math" | "language" | "english") => void;
   awardCorrect: (pts?: number) => void;
@@ -284,6 +287,7 @@ export const useGameStore = create<GameState>()(
       rouletteSpins: 0,
       lastRouletteDate: null,
       tempBadges: {},
+      equippedTempBadge: null,
       ownedShopItems: [],
       lastAppOpen: null,
       view: "home",
@@ -292,6 +296,15 @@ export const useGameStore = create<GameState>()(
       setName: (n) => set({ playerName: n.trim() || "Liz" }),
       setPlayMode: (m) => set({ playMode: m }),
       setTheme: (t) => set({ theme: normalizeThemeId(t) }),
+      equipTempBadge: (id) => {
+        if (id == null) {
+          set({ equippedTempBadge: null });
+          return;
+        }
+        const exp = get().tempBadges[id];
+        if (!exp || exp <= Date.now()) return;
+        set({ equippedTempBadge: id });
+      },
       setAvatar: (partial) =>
         set({ avatar: normalizeAvatar({ ...get().avatar, ...partial }) }),
 
@@ -416,8 +429,17 @@ export const useGameStore = create<GameState>()(
         for (const [id, exp] of Object.entries(tempBadges)) {
           if (exp <= now) delete tempBadges[id];
         }
+        let equippedTempBadge = s.equippedTempBadge;
+        if (equippedTempBadge && !tempBadges[equippedTempBadge]) {
+          equippedTempBadge = null;
+        }
         const dailyParts = ensureDaily(s.dailyParts);
-        set({ lastAppOpen: new Date().toISOString(), tempBadges, dailyParts });
+        set({
+          lastAppOpen: new Date().toISOString(),
+          tempBadges,
+          equippedTempBadge,
+          dailyParts,
+        });
       },
 
       spinRoulette: (sliceId) => {
@@ -434,6 +456,7 @@ export const useGameStore = create<GameState>()(
         let points = s.points;
         const tempBadges = { ...s.tempBadges };
         const exp = Date.now() + 24 * 60 * 60 * 1000;
+        let equippedTempBadge = s.equippedTempBadge;
 
         if (sliceId.startsWith("xp")) {
           const n = Number(sliceId.replace("xp", "")) || 10;
@@ -441,10 +464,13 @@ export const useGameStore = create<GameState>()(
           points += Math.max(1, Math.floor(n / 2));
         } else if (sliceId === "badge-brisa") {
           tempBadges["temp-brisa"] = exp;
+          equippedTempBadge = "temp-brisa";
         } else if (sliceId === "badge-chispa") {
           tempBadges["temp-chispa"] = exp;
+          equippedTempBadge = "temp-chispa";
         } else if (sliceId === "badge-eco") {
           tempBadges["temp-eco"] = exp;
+          equippedTempBadge = "temp-eco";
         } else {
           xp += 10;
           points += 5;
@@ -458,6 +484,7 @@ export const useGameStore = create<GameState>()(
           xp,
           points,
           tempBadges,
+          equippedTempBadge,
           lastAppOpen: new Date().toISOString(),
         });
         return msg;
@@ -672,6 +699,7 @@ export const useGameStore = create<GameState>()(
           rouletteSpins: 0,
           lastRouletteDate: null,
           tempBadges: {},
+          equippedTempBadge: null,
           ownedShopItems: [],
           lastAppOpen: null,
           view: "home",

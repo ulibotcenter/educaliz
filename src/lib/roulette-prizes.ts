@@ -22,7 +22,7 @@ export const ROULETTE_PRIZES: RoulettePrize[] = [
     wheelLabel: "+10 XP",
     fullName: "+10 XP — Destello Dorado",
     emoji: "✨",
-    color: "#c9a227",
+    color: "#e8c547",
     textOn: "dark",
   },
   {
@@ -30,7 +30,7 @@ export const ROULETTE_PRIZES: RoulettePrize[] = [
     wheelLabel: "+15 XP",
     fullName: "+15 XP — Destello de Suerte",
     emoji: "⚡",
-    color: "#e891c0",
+    color: "#f0a0d0",
     textOn: "dark",
   },
   {
@@ -38,7 +38,7 @@ export const ROULETTE_PRIZES: RoulettePrize[] = [
     wheelLabel: "+20 XP",
     fullName: "+20 XP — Aura de Sabiduría",
     emoji: "🔮",
-    color: "#7ec8e3",
+    color: "#6ec8f0",
     textOn: "dark",
   },
   {
@@ -46,7 +46,7 @@ export const ROULETTE_PRIZES: RoulettePrize[] = [
     wheelLabel: "Brisa",
     fullName: "Insignia temporal — Brisa Arcana",
     emoji: "🌬️",
-    color: "#3dd68c",
+    color: "#3dd6a0",
     textOn: "dark",
   },
   {
@@ -54,7 +54,7 @@ export const ROULETTE_PRIZES: RoulettePrize[] = [
     wheelLabel: "+30 XP",
     fullName: "+30 XP — Estrella Arcana",
     emoji: "🌟",
-    color: "#a78bfa",
+    color: "#b794f6",
     textOn: "dark",
   },
   {
@@ -62,7 +62,7 @@ export const ROULETTE_PRIZES: RoulettePrize[] = [
     wheelLabel: "Llama",
     fullName: "Insignia temporal — Llama Fugaz",
     emoji: "🔥",
-    color: "#f07178",
+    color: "#ff7a6e",
     textOn: "dark",
   },
   {
@@ -70,7 +70,7 @@ export const ROULETTE_PRIZES: RoulettePrize[] = [
     wheelLabel: "+40 XP",
     fullName: "+40 XP — Tesoro del Baúl",
     emoji: "💎",
-    color: "#d4b06a",
+    color: "#f0c674",
     textOn: "dark",
   },
   {
@@ -78,7 +78,7 @@ export const ROULETTE_PRIZES: RoulettePrize[] = [
     wheelLabel: "Eco",
     fullName: "Insignia temporal — Eco de las Estrellas",
     emoji: "🌀",
-    color: "#4a9fc0",
+    color: "#3d8ec4",
     textOn: "light",
   },
 ];
@@ -87,7 +87,11 @@ export type TempBadgeInfo = {
   name: string;
   emoji: string;
   blurb: string;
+  /** Longer kid-friendly effect text shown on tap */
+  effect: string;
   hue: "mint" | "ember" | "sky";
+  /** Soft aura class name key for avatar */
+  aura: "breeze" | "ember" | "stars";
 };
 
 /** Temporary badges (24h) — distinct names & visual hue from permanents */
@@ -96,19 +100,28 @@ export const TEMP_BADGE_LABELS: Record<string, TempBadgeInfo> = {
     name: "Brisa Arcana",
     emoji: "🌬️",
     blurb: "Una ráfaga de magia suave (24 h)",
+    effect:
+      "Cuando la equipas, un brillo de brisa envuelve tu avatar. Es solo de adorno mágico… ¡pero te hace sentir más ligera al estudiar!",
     hue: "mint",
+    aura: "breeze",
   },
   "temp-chispa": {
     name: "Llama Fugaz",
     emoji: "🔥",
     blurb: "Fuego amable que brilla hoy (24 h)",
+    effect:
+      "Equípala y tu avatar arde con un fulgor amable (sin quemar nada). Perfecta para días de mucha energía.",
     hue: "ember",
+    aura: "ember",
   },
   "temp-eco": {
     name: "Eco de las Estrellas",
     emoji: "🌀",
     blurb: "Un eco cósmico en tu capa (24 h)",
+    effect:
+      "Al equiparla, un eco de estrellas brilla a tu alrededor. Ideal para sentirte como una maga del cielo.",
     hue: "sky",
+    aura: "stars",
   },
 };
 
@@ -130,4 +143,15 @@ export function messageForPrize(id: string): string {
         ? "temp-chispa"
         : "temp-eco";
   return `¡Insignia temporal: ${TEMP_BADGE_LABELS[tempKey]?.name ?? p.fullName}!`;
+}
+
+export function tempIdFromPrize(sliceId: string): string | null {
+  if (sliceId === "badge-brisa") return "temp-brisa";
+  if (sliceId === "badge-chispa") return "temp-chispa";
+  if (sliceId === "badge-eco") return "temp-eco";
+  return null;
+}
+
+export function hoursLeft(expiresAt: number, now = Date.now()): number {
+  return Math.max(0, Math.ceil((expiresAt - now) / (60 * 60 * 1000)));
 }

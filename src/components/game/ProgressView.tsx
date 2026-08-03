@@ -172,7 +172,7 @@ export function ProgressView() {
         <div>
           <h2 className="font-display text-lg font-semibold text-fg">Insignias temporales</h2>
           <p className="text-xs text-muted">
-            Brillan distinto de las permanentes. Duran 24 h (renuevas si entras cada día).
+            Toca una para ver su magia y equipar el brillo en tu avatar. Duran 24 h (renuevas si entras cada día).
           </p>
         </div>
         {activeTemp.length === 0 ? (
@@ -181,9 +181,9 @@ export function ProgressView() {
           </p>
         ) : (
           <ul className="flex flex-wrap gap-2">
-            {activeTemp.map(([id]) => (
+            {activeTemp.map(([id, exp]) => (
               <li key={id}>
-                <TempBadgeChip id={id} showBlurb />
+                <TempBadgeChip id={id} showBlurb expiresAt={exp} />
               </li>
             ))}
           </ul>

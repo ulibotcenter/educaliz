@@ -51,6 +51,8 @@ export type PlayerProgress = {
   rouletteSpins: number;
   lastRouletteDate: string | null;
   tempBadges: Record<string, number>;
+  /** Equipped temporary aura (24h badge) */
+  equippedTempBadge?: string | null;
   ownedShopItems: string[];
   lastAppOpen: string | null;
   /** Not restored as play view — always home on load */
@@ -72,6 +74,12 @@ export type StudentProfile = {
   /** Week XP bucket for future "esta semana" filter */
   weekXp: number;
   weekKey: string;
+  /** Unique friend invite code (e.g. ARC-LIZ7K2A) */
+  inviteCode: string;
+  /** Successful referrals who signed up with this code */
+  referralCount: number;
+  /** Invite code used when this profile was created (once) */
+  referredBy: string | null;
   progress: PlayerProgress;
 };
 
@@ -97,6 +105,8 @@ export type CreateProfileInput = {
   username: string;
   displayName: string;
   pin?: string | null;
+  /** Friend's invite code (optional) */
+  friendCode?: string | null;
 };
 
 export type UsernameCheck =

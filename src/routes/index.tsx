@@ -16,6 +16,7 @@ import { DiagnosticView } from "@/components/game/DiagnosticView";
 import { RankingView } from "@/components/game/RankingView";
 import { ProfileGate } from "@/components/game/ProfileGate";
 import { ProfileSync } from "@/components/game/ProfileSync";
+import { CookieBanner } from "@/components/legal/CookieBanner";
 import { useGameStore } from "@/lib/game-store";
 import { useProfilesStore } from "@/lib/profiles";
 import { useEffect } from "react";
@@ -36,12 +37,18 @@ function App() {
     return (
       <div className="grid min-h-[50vh] place-items-center bg-academy text-muted">
         Abriendo la Academia…
+        <CookieBanner />
       </div>
     );
   }
 
   if (!activeProfileId) {
-    return <ProfileGate />;
+    return (
+      <>
+        <ProfileGate />
+        <CookieBanner />
+      </>
+    );
   }
 
   return (
@@ -66,6 +73,7 @@ function App() {
         {view === "ranking" && <RankingView />}
         {view === "profiles" && <ProfileGate />}
       </Shell>
+      <CookieBanner />
     </>
   );
 }

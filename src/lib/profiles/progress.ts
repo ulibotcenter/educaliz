@@ -64,6 +64,7 @@ export function emptyProgress(displayName: string): PlayerProgress {
     rouletteSpins: 0,
     lastRouletteDate: null,
     tempBadges: {},
+    equippedTempBadge: null,
     ownedShopItems: [],
     lastAppOpen: null,
   };
@@ -112,6 +113,7 @@ export function snapshotProgress(s: GameState): PlayerProgress {
     rouletteSpins: s.rouletteSpins,
     lastRouletteDate: s.lastRouletteDate,
     tempBadges: { ...s.tempBadges },
+    equippedTempBadge: s.equippedTempBadge ?? null,
     ownedShopItems: [...s.ownedShopItems],
     lastAppOpen: s.lastAppOpen,
   };
@@ -169,6 +171,7 @@ export function progressToGamePatch(
     rouletteSpins: p.rouletteSpins ?? 0,
     lastRouletteDate: p.lastRouletteDate ?? null,
     tempBadges: p.tempBadges ?? {},
+    equippedTempBadge: p.equippedTempBadge ?? null,
     ownedShopItems: p.ownedShopItems ?? [],
     lastAppOpen: p.lastAppOpen ?? null,
     view: "home",

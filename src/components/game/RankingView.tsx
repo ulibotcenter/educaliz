@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
-import { Crown, Medal, Sparkles, Timer, Trophy } from "lucide-react";
+import {
+  CloudOff,
+  Crown,
+  Medal,
+  RefreshCw,
+  Sparkles,
+  Timer,
+  Trophy,
+} from "lucide-react";
 import { useGameStore } from "@/lib/game-store";
 import {
   TOURNAMENT_LABEL,
@@ -7,6 +15,7 @@ import {
   TOURNAMENT_MIN_SESSIONS,
   eligibilityHint,
   getCountdown,
+  isTournamentEligible,
   type CountdownParts,
 } from "@/lib/profiles/tournament";
 import { useProfilesStore } from "@/lib/profiles";
@@ -41,7 +50,10 @@ function CountdownBlock() {
 
   return (
     <div className="relative overflow-hidden rounded-2xl border-2 border-primary/50 bg-gradient-to-br from-primary/20 via-card to-accent/15 p-5 card-glow">
-      <div className="pointer-events-none absolute -right-6 -top-6 text-7xl opacity-10" aria-hidden>
+      <div
+        className="pointer-events-none absolute -right-6 -top-6 text-7xl opacity-10"
+        aria-hidden
+      >
         🏆
       </div>
       <div className="relative space-y-3">
@@ -52,7 +64,9 @@ function CountdownBlock() {
         <h2 className="font-display text-xl font-semibold text-fg sm:text-2xl">
           {TOURNAMENT_LABEL} empieza en:
         </h2>
-        <p className="text-sm text-muted">5 de septiembre de 2026 · 12:00 (Madrid)</p>
+        <p className="text-sm text-muted">
+          5 de septiembre de 2026 · 12:00 (Madrid)
+        </p>
         <div className="grid grid-cols-4 gap-2">
           {cells.map((c) => (
             <div
@@ -77,50 +91,106 @@ export function RankingView() {
   const ranking = useProfilesStore((s) => s.ranking);
   const getActive = useProfilesStore((s) => s.getActive);
   const syncActiveFromGame = useProfilesStore((s) => s.syncActiveFromGame);
+  const refreshFromCloud = useProfilesStore((s) => s.refreshFromCloud);
+  const flushActiveToCloud = useProfilesStore((s) => s.flushActiveToCloud);
+  const cloudError = useProfilesStore((s) => s.cloudError);
+  const cloudEnabled = useProfilesStore((s) => s.cloudEnabled);
+  const loading = useProfilesStore((s) => s.loading);
+  const clearCloudError = useProfilesStore((s) => s.clearCloudError);
   const setView = useGameStore((s) => s.setView);
-  const game = useGameStore();
+  const xp = useGameStore((s) => s.xp);
+  const streak = useGameStore((s) => s.streak);
+  const areaSessionCount = useGameStore((s) => s.areaSessionCount);
+  const playerName = useGameStore((s) => s.playerName);
 
-  // Keep ranking fresh with live progress
+  const [refreshing, setRefreshing] = useState(false);
+
   useEffect(() => {
     syncActiveFromGame();
-  }, [
-    syncActiveFromGame,
-    game.xp,
-    game.streak,
-    game.areaSessionCount.math,
-    game.areaSessionCount.language,
-    game.areaSessionCount.english,
-  ]);
+    if (cloudEnabled) {
+      void refreshFromCloud();
+    }
+  }, [cloudEnabled, refreshFromCloud, syncActiveFromGame]);
+
+  useEffect(() => {
+    syncActiveFromGame();
+  }, [syncActiveFromGame, xp, streak, areaSessionCount, playerName]);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    clearCloudError();
+    syncActiveFromGame();
+    await flushActiveToCloud();
+    await refreshFromCloud();
+    setRefreshing(false);
+  }
 
   const rows = ranking(20);
   const active = getActive();
-  const progress = snapshotProgress(game);
+  const progress = snapshotProgress(useGameStore.getState());
   const hint = eligibilityHint(progress);
-  const eligible = active?.tournamentEligible || false;
+  const eligible =
+    Boolean(active?.tournamentEligible) || isTournamentEligible(progress);
 
   return (
     <div className="mx-auto max-w-lg animate-fade-in space-y-6">
-      <header className="space-y-1">
-        <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary">
-          <Trophy className="h-4 w-4" />
-          Ranking de la Academia
-        </p>
-        <h1 className="font-display text-2xl font-semibold text-fg sm:text-3xl">
-          Tabla de magas
-        </h1>
-        <p className="text-base text-muted">
-          Ordenado por XP total. Preparado para filtrar «esta semana» más adelante.
-        </p>
+      <header className="flex items-start justify-between gap-3">
+        <div className="space-y-1">
+          <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary">
+            <Trophy className="h-4 w-4" />
+            Ranking de la Academia
+          </p>
+          <h1 className="font-display text-2xl font-semibold text-fg sm:text-3xl">
+            Tabla de magas
+          </h1>
+          <p className="text-base text-muted">
+            {cloudEnabled
+              ? "Datos reales de la nube · ordenado por XP total."
+              : "Ranking local · conecta la nube en el despliegue."}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => void onRefresh()}
+          disabled={refreshing || loading}
+          className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-full border border-border bg-surface px-3 text-xs font-semibold text-fg disabled:opacity-50"
+          title="Actualizar ranking"
+        >
+          <RefreshCw
+            className={cn(
+              "h-3.5 w-3.5",
+              (refreshing || loading) && "animate-spin",
+            )}
+          />
+          Actualizar
+        </button>
       </header>
+
+      {cloudError && (
+        <div
+          className="flex items-start gap-2 rounded-xl border border-danger/40 bg-danger/10 px-3 py-2.5 text-sm text-danger"
+          role="alert"
+        >
+          <CloudOff className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            <p className="font-medium">{cloudError}</p>
+            <button
+              type="button"
+              className="mt-1 text-xs font-bold underline"
+              onClick={() => void onRefresh()}
+            >
+              Reintentar
+            </button>
+          </div>
+        </div>
+      )}
 
       <CountdownBlock />
 
       <section
         className={cn(
           "rounded-2xl border p-4",
-          eligible
-            ? "border-success/40 bg-success/10"
-            : "border-border bg-card",
+          eligible ? "border-success/40 bg-success/10" : "border-border bg-card",
         )}
       >
         <p className="flex items-center gap-2 font-semibold text-fg">
@@ -129,7 +199,8 @@ export function RankingView() {
         </p>
         <p className="mt-1 text-sm text-muted">{hint}</p>
         <p className="mt-2 text-xs text-muted">
-          Meta: nivel {TOURNAMENT_MIN_LEVEL} o {TOURNAMENT_MIN_SESSIONS} partidas oficiales.
+          Meta: nivel {TOURNAMENT_MIN_LEVEL} o {TOURNAMENT_MIN_SESSIONS} partidas
+          oficiales.
         </p>
         {eligible && (
           <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-success/20 px-3 py-1 text-xs font-bold text-success">
@@ -139,7 +210,9 @@ export function RankingView() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="font-display text-lg font-semibold text-fg">Top {Math.min(20, Math.max(rows.length, 10))}</h2>
+        <h2 className="font-display text-lg font-semibold text-fg">
+          Top {Math.min(20, Math.max(rows.length, 10))}
+        </h2>
         {rows.length === 0 ? (
           <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted">
             Aún no hay perfiles en el ranking. ¡Crea el tuyo!
@@ -149,7 +222,13 @@ export function RankingView() {
             {rows.map((r) => {
               const isMe = r.profileId === active?.id;
               const medal =
-                r.rank === 1 ? "🥇" : r.rank === 2 ? "🥈" : r.rank === 3 ? "🥉" : null;
+                r.rank === 1
+                  ? "🥇"
+                  : r.rank === 2
+                    ? "🥈"
+                    : r.rank === 3
+                      ? "🥉"
+                      : null;
               return (
                 <li
                   key={r.profileId}
@@ -178,7 +257,10 @@ export function RankingView() {
                         </span>
                       )}
                       {r.rank === 1 && (
-                        <Crown className="h-3.5 w-3.5 text-primary" aria-hidden />
+                        <Crown
+                          className="h-3.5 w-3.5 text-primary"
+                          aria-hidden
+                        />
                       )}
                     </span>
                     <span className="block text-xs text-muted">

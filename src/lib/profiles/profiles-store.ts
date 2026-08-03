@@ -1,6 +1,6 @@
 /**
- * Multi-profile registry (localStorage). Ready to swap for Supabase later:
- * - listProfiles / createProfile / selectProfile map cleanly to REST/RPC.
+ * Multi-profile store — Supabase is source of truth when configured.
+ * localStorage keeps active session + offline cache.
  */
 
 import { create } from "zustand";
@@ -23,6 +23,25 @@ import {
   validateUsername,
   weekKeyNow,
 } from "@/lib/profiles/types";
+import {
+  CLOUD_ERROR_MSG,
+  isSupabaseConfigured,
+} from "@/lib/supabase/client";
+import {
+  deleteProfileRemote,
+  fetchAllProfiles,
+  fetchProfileById,
+  insertProfile,
+  isUsernameTakenRemote,
+  updateProfileRemote,
+  upsertProfileByUsername,
+} from "@/lib/profiles/supabase-api";
+import {
+  FRIEND_XP,
+  REFERRER_XP,
+  generateInviteCode,
+  normalizeInviteCode,
+} from "@/lib/profiles/referral";
 
 export const USERNAME_TAKEN_MSG =
   "Este nome já está a ser usado. Escolhe outro.";
@@ -40,10 +59,133 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+function toMap(list: StudentProfile[]): Record<string, StudentProfile> {
+  const m: Record<string, StudentProfile> = {};
+  for (const p of list) m[p.id] = ensureInviteFields(p);
+  return m;
+}
+
+function ensureInviteFields(p: StudentProfile): StudentProfile {
+  const inviteCode =
+    p.inviteCode && p.inviteCode.length > 0
+      ? p.inviteCode
+      : generateInviteCode(p.username, p.id);
+  return {
+    ...p,
+    inviteCode,
+    referralCount: typeof p.referralCount === "number" ? p.referralCount : 0,
+    referredBy: p.referredBy ?? null,
+  };
+}
+
+function findByInviteCode(
+  profiles: Record<string, StudentProfile>,
+  code: string,
+): StudentProfile | null {
+  const c = normalizeInviteCode(code);
+  if (!c) return null;
+  for (const p of Object.values(profiles)) {
+    const fixed = ensureInviteFields(p);
+    const codes = new Set(
+      [
+        fixed.inviteCode,
+        generateInviteCode(fixed.username, fixed.id),
+        // Also match codes stored only inside progress JSON
+        (fixed.progress as { inviteCode?: string } | null)?.inviteCode,
+      ]
+        .filter(Boolean)
+        .map((x) => normalizeInviteCode(String(x))),
+    );
+    if (codes.has(c)) return fixed;
+  }
+  return null;
+}
+
+/** Keep the richer progress when merging local vs cloud copies of the same profile */
+function mergeProfilePreferRicher(
+  local: StudentProfile | undefined,
+  remote: StudentProfile,
+): StudentProfile {
+  if (!local) return ensureInviteFields(remote);
+  const l = ensureInviteFields(local);
+  const r = ensureInviteFields(remote);
+  const localXp = l.progress.xp ?? 0;
+  const remoteXp = r.progress.xp ?? 0;
+  const localRef = l.referralCount ?? 0;
+  const remoteRef = r.referralCount ?? 0;
+  const localTime = Date.parse(l.updatedAt || "") || 0;
+  const remoteTime = Date.parse(r.updatedAt || "") || 0;
+
+  // Prefer higher XP / referral counts (referral rewards must never be lost)
+  const useLocalProgress =
+    localXp > remoteXp ||
+    (localXp === remoteXp && localRef > remoteRef) ||
+    (localXp === remoteXp && localRef === remoteRef && localTime > remoteTime);
+
+  if (!useLocalProgress) {
+    return ensureInviteFields({
+      ...r,
+      referralCount: Math.max(localRef, remoteRef),
+      inviteCode: l.inviteCode || r.inviteCode,
+      referredBy: r.referredBy ?? l.referredBy,
+    });
+  }
+
+  return ensureInviteFields({
+    ...l,
+    // keep cloud pin/username if present
+    pin: r.pin ?? l.pin,
+    username: r.username || l.username,
+    displayName: l.displayName || r.displayName,
+    referralCount: Math.max(localRef, remoteRef),
+    progress: {
+      ...r.progress,
+      ...l.progress,
+      xp: Math.max(localXp, remoteXp),
+      points: Math.max(l.progress.points ?? 0, r.progress.points ?? 0),
+    },
+    weekXp: Math.max(l.weekXp ?? 0, r.weekXp ?? 0),
+    updatedAt: localTime >= remoteTime ? l.updatedAt : r.updatedAt,
+  });
+}
+
+function awardReferrerXp(referrer: StudentProfile): StudentProfile {
+  const base = ensureInviteFields(referrer);
+  const xp = (base.progress.xp || 0) + REFERRER_XP;
+  const points = (base.progress.points || 0) + Math.floor(REFERRER_XP / 2);
+  return ensureInviteFields({
+    ...base,
+    referralCount: (base.referralCount || 0) + 1,
+    weekXp: (base.weekXp || 0) + REFERRER_XP,
+    updatedAt: nowIso(),
+    progress: {
+      ...base.progress,
+      xp,
+      points,
+      // keep invite meta inside progress for cloud round-trips
+      ...( {
+        inviteCode: base.inviteCode,
+        referralCount: (base.referralCount || 0) + 1,
+        referredBy: base.referredBy,
+      } as object),
+    },
+  });
+}
+
+
+type ActionResult = { ok: true } | { ok: false; error: string };
+type CreateResult =
+  | { ok: true; profile: StudentProfile }
+  | { ok: false; error: string };
+
 type ProfilesState = {
   activeProfileId: string | null;
   profiles: Record<string, StudentProfile>;
   bootstrapped: boolean;
+  loading: boolean;
+  cloudEnabled: boolean;
+  cloudError: string | null;
+  lastSyncOk: boolean;
 
   listProfiles: () => StudentProfile[];
   getActive: () => StudentProfile | null;
@@ -52,25 +194,30 @@ type ProfilesState = {
     raw: string,
     exceptId?: string,
   ) => UsernameCheck | { ok: false; error: string };
+  checkUsernameAsync: (
+    raw: string,
+    exceptId?: string,
+  ) => Promise<UsernameCheck | { ok: false; error: string }>;
 
-  createProfile: (
-    input: CreateProfileInput,
-  ) => { ok: true; profile: StudentProfile } | { ok: false; error: string };
-
-  selectProfile: (
-    id: string,
-    pin?: string,
-  ) => { ok: true } | { ok: false; error: string };
-
+  createProfile: (input: CreateProfileInput) => Promise<CreateResult>;
+  deleteProfile: (id: string) => Promise<ActionResult>;
+  selectProfile: (id: string, pin?: string) => Promise<ActionResult>;
   syncActiveFromGame: () => void;
+  /** Awaitable sync used before switch / ranking refresh */
+  flushActiveToCloud: () => Promise<void>;
+  refreshFromCloud: () => Promise<ActionResult>;
   signOutToPicker: () => void;
   ranking: (limit?: number) => RankingRow[];
-  bootstrapFromLegacy: () => void;
+  bootstrapFromLegacy: () => Promise<void>;
+  clearCloudError: () => void;
 };
 
 function applyProgressToGame(progress: PlayerProgress, displayName: string) {
   useGameStore.setState(progressToGamePatch(progress, displayName) as never);
 }
+
+let syncTimer: ReturnType<typeof setTimeout> | null = null;
+let syncInFlight = false;
 
 export const useProfilesStore = create<ProfilesState>()(
   persist(
@@ -78,6 +225,12 @@ export const useProfilesStore = create<ProfilesState>()(
       activeProfileId: null,
       profiles: {},
       bootstrapped: false,
+      loading: false,
+      cloudEnabled: isSupabaseConfigured(),
+      cloudError: null,
+      lastSyncOk: true,
+
+      clearCloudError: () => set({ cloudError: null }),
 
       listProfiles: () =>
         Object.values(get().profiles).sort((a, b) =>
@@ -106,72 +259,234 @@ export const useProfilesStore = create<ProfilesState>()(
         return v;
       },
 
-      createProfile: (input) => {
-        const check = get().checkUsername(input.username);
-        if (!check.ok) return { ok: false, error: check.error };
+      checkUsernameAsync: async (raw, exceptId) => {
+        const local = get().checkUsername(raw, exceptId);
+        if (!local.ok) return local;
+        if (!get().cloudEnabled) return local;
 
-        const pin = validatePin(input.pin ?? null);
-        if (input.pin && input.pin.length > 0 && !pin) {
-          return {
-            ok: false,
-            error: "El PIN debe ser exactamente 4 dígitos (o déjalo vacío).",
-          };
+        const remote = await isUsernameTakenRemote(local.normalized, exceptId);
+        if (!remote.ok) {
+          // Soft-fail: allow local check if cloud flaky during typing
+          return local;
         }
-
-        const displayName =
-          input.displayName.trim() ||
-          check.normalized.charAt(0).toUpperCase() + check.normalized.slice(1);
-
-        get().syncActiveFromGame();
-
-        const id = newId();
-        const progress = emptyProgress(displayName);
-        const profile: StudentProfile = {
-          id,
-          username: check.normalized,
-          displayName,
-          pin,
-          createdAt: nowIso(),
-          updatedAt: nowIso(),
-          tournamentEligible: false,
-          weekXp: 0,
-          weekKey: weekKeyNow(),
-          progress,
-        };
-
-        set((s) => ({
-          profiles: { ...s.profiles, [id]: profile },
-          activeProfileId: id,
-        }));
-
-        applyProgressToGame(progress, displayName);
-        return { ok: true, profile };
+        if (remote.data) return { ok: false, error: USERNAME_TAKEN_MSG };
+        return local;
       },
 
-      selectProfile: (id, pin) => {
-        const profile = get().profiles[id];
-        if (!profile) return { ok: false, error: "No encontramos ese perfil." };
+      createProfile: async (input) => {
+        set({ cloudError: null, loading: true });
+        try {
+          const check = await get().checkUsernameAsync(input.username);
+          if (!check.ok) return { ok: false, error: check.error };
 
-        if (profile.pin) {
-          if (!pin || pin !== profile.pin) {
-            return { ok: false, error: "PIN incorrecto. Prueba otra vez." };
+          const pin = validatePin(input.pin ?? null);
+          if (input.pin && input.pin.length > 0 && !pin) {
+            return {
+              ok: false,
+              error: "El PIN debe ser exactamente 4 dígitos (o déjalo vacío).",
+            };
           }
-        }
 
-        get().syncActiveFromGame();
+          const displayName =
+            input.displayName.trim() ||
+            check.normalized.charAt(0).toUpperCase() +
+              check.normalized.slice(1);
 
-        set({ activeProfileId: id });
-        applyProgressToGame(profile.progress, profile.displayName);
-        const eligible = isTournamentEligible(profile.progress);
-        if (eligible !== profile.tournamentEligible) {
-          set((s) => ({
-            profiles: {
-              ...s.profiles,
-              [id]: { ...profile, tournamentEligible: eligible },
-            },
-          }));
+          await get().flushActiveToCloud();
+
+          const id = newId();
+          const progress = emptyProgress(displayName);
+          const inviteCode = generateInviteCode(check.normalized, id);
+
+          // Friend referral — only on real new profile creation
+          let referredBy: string | null = null;
+          let referrerPatch: StudentProfile | null = null;
+          const rawFriend = (input.friendCode ?? "").trim();
+          if (rawFriend) {
+            const code = normalizeInviteCode(rawFriend);
+            // Prefer cloud list if available
+            if (get().cloudEnabled) {
+              const all = await fetchAllProfiles();
+              if (all.ok) {
+                set((s) => ({
+                  profiles: { ...s.profiles, ...toMap(all.data) },
+                }));
+              }
+            }
+            const referrer = findByInviteCode(get().profiles, code);
+            if (!referrer) {
+              return {
+                ok: false,
+                error: "Ese código de amigo no existe. Pídeselo otra vez o créalo sin código.",
+              };
+            }
+            if (referrer.username === check.normalized) {
+              return { ok: false, error: "No puedes usar tu propio código." };
+            }
+            referredBy = ensureInviteFields(referrer).inviteCode;
+            progress.xp = (progress.xp || 0) + FRIEND_XP;
+            progress.points = (progress.points || 0) + Math.floor(FRIEND_XP / 2);
+            // Award +30 XP to the inviter (persisted even if they are offline)
+            referrerPatch = awardReferrerXp(referrer);
+            // Write inviter progress to local store immediately (before cloud)
+            set((s) => ({
+              profiles: {
+                ...s.profiles,
+                [referrerPatch!.id]: referrerPatch!,
+              },
+            }));
+          }
+
+          let profile: StudentProfile = ensureInviteFields({
+            id,
+            username: check.normalized,
+            displayName,
+            pin,
+            createdAt: nowIso(),
+            updatedAt: nowIso(),
+            tournamentEligible: false,
+            weekXp: progress.xp,
+            weekKey: weekKeyNow(),
+            inviteCode,
+            referralCount: 0,
+            referredBy,
+            progress,
+          });
+
+          if (get().cloudEnabled) {
+            const remote = await insertProfile(profile);
+            if (!remote.ok) {
+              set({ cloudError: remote.error, lastSyncOk: false });
+              return { ok: false, error: remote.error };
+            }
+            let saved = ensureInviteFields(remote.data);
+            // Persist invite meta if remote row lacked it
+            if (!remote.data.inviteCode || referredBy) {
+              const up = await updateProfileRemote({
+                ...saved,
+                inviteCode: saved.inviteCode || inviteCode,
+                referredBy,
+                referralCount: 0,
+                progress: profile.progress,
+              });
+              if (up.ok) saved = ensureInviteFields(up.data);
+            }
+            if (referrerPatch) {
+              const upRef = await updateProfileRemote(referrerPatch);
+              if (upRef.ok) {
+                // Never accept a cloud row that lost the referral XP
+                referrerPatch = mergeProfilePreferRicher(
+                  referrerPatch,
+                  upRef.data,
+                );
+                // If cloud still behind, force one more write with our richer copy
+                if ((upRef.data.progress.xp ?? 0) < (referrerPatch.progress.xp ?? 0)) {
+                  const retry = await updateProfileRemote(referrerPatch);
+                  if (retry.ok) {
+                    referrerPatch = mergeProfilePreferRicher(
+                      referrerPatch,
+                      retry.data,
+                    );
+                  }
+                }
+              }
+              // Always keep the richer local copy in memory regardless of cloud
+            }
+            set((s) => {
+              const profiles = {
+                ...s.profiles,
+                [saved.id]: saved,
+              };
+              if (referrerPatch) profiles[referrerPatch.id] = referrerPatch;
+              return {
+                profiles,
+                activeProfileId: saved.id,
+                lastSyncOk: true,
+                cloudError: null,
+              };
+            });
+            applyProgressToGame(saved.progress, saved.displayName);
+            return { ok: true, profile: saved };
+          }
+
+          // Offline / no Supabase env — local only
+          set((s) => {
+            const profiles = { ...s.profiles, [id]: profile };
+            if (referrerPatch) profiles[referrerPatch.id] = referrerPatch;
+            return {
+              profiles,
+              activeProfileId: id,
+              cloudError: isSupabaseConfigured()
+                ? null
+                : "Modo local: la nube no está configurada todavía.",
+            };
+          });
+          applyProgressToGame(progress, displayName);
+          return { ok: true, profile };
+        } finally {
+          set({ loading: false });
         }
-        return { ok: true };
+      },
+
+      selectProfile: async (id, pin) => {
+        set({ cloudError: null, loading: true });
+        try {
+          let profile = get().profiles[id];
+
+          // Prefer fresh cloud copy
+          if (get().cloudEnabled) {
+            const remote = await fetchProfileById(id);
+            if (remote.ok) {
+              const local = get().profiles[id];
+              profile = mergeProfilePreferRicher(local, remote.data);
+              set((s) => ({
+                profiles: { ...s.profiles, [id]: profile! },
+              }));
+              // Push local referral XP up if cloud was stale
+              if (
+                local &&
+                (local.progress.xp ?? 0) > (remote.data.progress.xp ?? 0)
+              ) {
+                void updateProfileRemote(profile);
+              }
+            } else if (!profile) {
+              set({ cloudError: remote.error, lastSyncOk: false });
+              return { ok: false, error: remote.error };
+            } else {
+              // Keep local cache, warn softly
+              set({ cloudError: remote.error, lastSyncOk: false });
+            }
+          }
+
+          if (!profile) {
+            return { ok: false, error: "No encontramos ese perfil." };
+          }
+
+          if (profile.pin) {
+            if (!pin || pin !== profile.pin) {
+              return { ok: false, error: "PIN incorrecto. Prueba otra vez." };
+            }
+          }
+
+          await get().flushActiveToCloud();
+
+          set({ activeProfileId: id });
+          applyProgressToGame(profile.progress, profile.displayName);
+
+          const eligible = isTournamentEligible(profile.progress);
+          if (eligible !== profile.tournamentEligible) {
+            const next = { ...profile, tournamentEligible: eligible };
+            set((s) => ({
+              profiles: { ...s.profiles, [id]: next },
+            }));
+            if (get().cloudEnabled) {
+              void updateProfileRemote(next);
+            }
+          }
+          return { ok: true };
+        } finally {
+          set({ loading: false });
+        }
       },
 
       syncActiveFromGame: () => {
@@ -182,7 +497,8 @@ export const useProfilesStore = create<ProfilesState>()(
 
         const game = useGameStore.getState();
         const progress = snapshotProgress(game);
-        const displayName = (game.playerName || prev.displayName).trim() || prev.displayName;
+        const displayName =
+          (game.playerName || prev.displayName).trim() || prev.displayName;
         progress.playerName = displayName;
 
         const wk = weekKeyNow();
@@ -197,8 +513,7 @@ export const useProfilesStore = create<ProfilesState>()(
         }
 
         const tournamentEligible = isTournamentEligible(progress);
-
-        const next: StudentProfile = {
+        const next: StudentProfile = ensureInviteFields({
           ...prev,
           displayName,
           updatedAt: nowIso(),
@@ -206,15 +521,142 @@ export const useProfilesStore = create<ProfilesState>()(
           weekXp,
           weekKey,
           progress,
-        };
+        });
 
         set((s) => ({
           profiles: { ...s.profiles, [id]: next },
         }));
+
+        // Debounced cloud write
+        if (!get().cloudEnabled) return;
+        if (syncTimer) clearTimeout(syncTimer);
+        syncTimer = setTimeout(() => {
+          void get().flushActiveToCloud();
+        }, 900);
+      },
+
+      flushActiveToCloud: async () => {
+        const id = get().activeProfileId;
+        if (!id) return;
+        // Ensure latest local snapshot first
+        const prev = get().profiles[id];
+        if (!prev) return;
+
+        // Re-snapshot game if this is still the active profile
+        if (get().activeProfileId === id) {
+          const game = useGameStore.getState();
+          const progress = snapshotProgress(game);
+          const displayName =
+            (game.playerName || prev.displayName).trim() || prev.displayName;
+          progress.playerName = displayName;
+          const tournamentEligible = isTournamentEligible(progress);
+          const next: StudentProfile = {
+            ...prev,
+            displayName,
+            updatedAt: nowIso(),
+            tournamentEligible,
+            progress,
+            weekXp: prev.weekXp,
+            weekKey: prev.weekKey,
+          };
+          set((s) => ({
+            profiles: { ...s.profiles, [id]: next },
+          }));
+        }
+
+        if (!get().cloudEnabled) return;
+        if (syncInFlight) return;
+        syncInFlight = true;
+        try {
+          const profile = get().profiles[id];
+          if (!profile) return;
+          const remote = await updateProfileRemote(profile);
+          if (!remote.ok) {
+            set({ cloudError: remote.error, lastSyncOk: false });
+            return;
+          }
+          set((s) => ({
+            profiles: { ...s.profiles, [id]: remote.data },
+            lastSyncOk: true,
+            cloudError: null,
+          }));
+        } finally {
+          syncInFlight = false;
+        }
+      },
+
+      refreshFromCloud: async () => {
+        if (!get().cloudEnabled) {
+          return {
+            ok: false,
+            error: "La nube no está configurada todavía.",
+          };
+        }
+        set({ loading: true, cloudError: null });
+        try {
+          const res = await fetchAllProfiles();
+          if (!res.ok) {
+            set({ cloudError: res.error, lastSyncOk: false });
+            return { ok: false, error: res.error };
+          }
+          const localAll = get().profiles;
+          const map: Record<string, StudentProfile> = {};
+          for (const remote of res.data) {
+            map[remote.id] = mergeProfilePreferRicher(
+              localAll[remote.id],
+              remote,
+            );
+          }
+          for (const [id, p] of Object.entries(localAll)) {
+            if (!map[id]) map[id] = ensureInviteFields(p);
+          }
+          set({
+            profiles: map,
+            lastSyncOk: true,
+            cloudError: null,
+          });
+          return { ok: true };
+        } finally {
+          set({ loading: false });
+        }
+      },
+
+      deleteProfile: async (id) => {
+        set({ cloudError: null, loading: true });
+        try {
+          const profile = get().profiles[id];
+          if (!profile) {
+            return { ok: false, error: "No encontramos ese perfil." };
+          }
+
+          if (get().cloudEnabled) {
+            const remote = await deleteProfileRemote(id);
+            if (!remote.ok) {
+              set({ cloudError: remote.error, lastSyncOk: false });
+              return { ok: false, error: remote.error };
+            }
+          }
+
+          set((s) => {
+            const profiles = { ...s.profiles };
+            delete profiles[id];
+            const activeProfileId =
+              s.activeProfileId === id ? null : s.activeProfileId;
+            return {
+              profiles,
+              activeProfileId,
+              lastSyncOk: true,
+              cloudError: null,
+            };
+          });
+          return { ok: true };
+        } finally {
+          set({ loading: false });
+        }
       },
 
       signOutToPicker: () => {
-        get().syncActiveFromGame();
+        void get().flushActiveToCloud();
         set({ activeProfileId: null });
       },
 
@@ -226,8 +668,8 @@ export const useProfilesStore = create<ProfilesState>()(
             displayName: p.displayName,
             avatar: p.progress.avatar,
             level: levelFromXp(p.progress.xp),
-            xp: p.progress.xp,
-            streak: p.progress.streak,
+            xp: p.progress.xp ?? 0,
+            streak: p.progress.streak ?? 0,
             tournamentEligible: p.tournamentEligible,
           }))
           .sort((a, b) => {
@@ -240,93 +682,203 @@ export const useProfilesStore = create<ProfilesState>()(
         return rows;
       },
 
-      bootstrapFromLegacy: () => {
+      bootstrapFromLegacy: async () => {
         if (get().bootstrapped) return;
-        const existing = Object.keys(get().profiles);
-        if (existing.length > 0) {
-          set({ bootstrapped: true });
+        set({
+          loading: true,
+          cloudEnabled: isSupabaseConfigured(),
+          cloudError: null,
+        });
+
+        try {
+          // 1) Load from Supabase when available
+          if (get().cloudEnabled) {
+            const res = await fetchAllProfiles();
+            if (res.ok) {
+              const local = get().profiles;
+              const map: Record<string, StudentProfile> = {};
+              for (const remote of res.data) {
+                map[remote.id] = mergeProfilePreferRicher(
+                  local[remote.id],
+                  remote,
+                );
+              }
+              // Keep any local-only profiles (not yet on cloud)
+              for (const [id, p] of Object.entries(local)) {
+                if (!map[id]) map[id] = ensureInviteFields(p);
+              }
+              set({ profiles: map, lastSyncOk: true });
+            } else {
+              set({
+                cloudError: res.error,
+                lastSyncOk: false,
+              });
+              // Keep any cached profiles from persist
+            }
+          }
+
+          // 2) Migrate legacy Liz save if needed
+          let legacyProgress: PlayerProgress | null = null;
+          let displayName = "Liz";
+          try {
+            const raw = localStorage.getItem(LEGACY_GAME_KEY);
+            if (raw) {
+              const parsed = JSON.parse(raw) as {
+                state?: Record<string, unknown>;
+              };
+              const st = parsed.state;
+              if (st && typeof st === "object") {
+                const base = emptyProgress(
+                  typeof st.playerName === "string" ? st.playerName : "Liz",
+                );
+                const merged = {
+                  ...base,
+                  ...(st as Partial<PlayerProgress>),
+                  session: null as null,
+                };
+                const patch = progressToGamePatch(
+                  merged,
+                  typeof st.playerName === "string" ? st.playerName : "Liz",
+                );
+                useGameStore.setState(patch as never);
+                legacyProgress = snapshotProgress(useGameStore.getState());
+                displayName =
+                  typeof st.playerName === "string" && st.playerName.trim()
+                    ? st.playerName.trim()
+                    : "Liz";
+              }
+            }
+          } catch {
+            /* ignore */
+          }
+
+          if (legacyProgress) {
+            // Already have a liz-like user in cloud/cache?
+            const hasLiz = Object.values(get().profiles).some(
+              (p) =>
+                p.username === "liz" ||
+                p.displayName.toLowerCase() === "liz" ||
+                p.progress.xp > 0,
+            );
+
+            if (!hasLiz || !Object.keys(get().profiles).length) {
+              let finalUser = "liz";
+              let n = 1;
+              while (get().isUsernameTaken(finalUser)) {
+                finalUser = `liz${n++}`;
+              }
+
+              // Also check remote uniqueness if cloud up
+              if (get().cloudEnabled) {
+                for (let i = 0; i < 20; i++) {
+                  const taken = await isUsernameTakenRemote(finalUser);
+                  if (taken.ok && taken.data) {
+                    finalUser = `liz${n++}`;
+                  } else break;
+                }
+              }
+
+              const id = newId();
+              const profile: StudentProfile = ensureInviteFields({
+                id,
+                username: finalUser,
+                displayName,
+                pin: null,
+                createdAt: nowIso(),
+                updatedAt: nowIso(),
+                tournamentEligible: isTournamentEligible(legacyProgress),
+                weekXp: legacyProgress.xp,
+                weekKey: weekKeyNow(),
+                inviteCode: generateInviteCode(finalUser, id),
+                referralCount: 0,
+                referredBy: null,
+                progress: legacyProgress,
+              });
+
+              if (get().cloudEnabled) {
+                const up = await upsertProfileByUsername(profile);
+                if (up.ok) {
+                  set((s) => ({
+                    profiles: { ...s.profiles, [up.data.id]: up.data },
+                    activeProfileId: up.data.id,
+                  }));
+                  applyProgressToGame(up.data.progress, up.data.displayName);
+                  try {
+                    localStorage.removeItem(LEGACY_GAME_KEY);
+                  } catch {
+                    /* ignore */
+                  }
+                } else {
+                  // Local fallback so Liz is not lost
+                  set((s) => ({
+                    profiles: { ...s.profiles, [id]: profile },
+                    activeProfileId: id,
+                    cloudError: up.error,
+                  }));
+                  applyProgressToGame(legacyProgress, displayName);
+                }
+              } else {
+                set((s) => ({
+                  profiles: { ...s.profiles, [id]: profile },
+                  activeProfileId: id,
+                }));
+                applyProgressToGame(legacyProgress, displayName);
+              }
+            }
+          }
+
+          // 3) Rehydrate active profile into game store
           const aid = get().activeProfileId;
           if (aid && get().profiles[aid]) {
             const p = get().profiles[aid]!;
-            applyProgressToGame(p.progress, p.displayName);
-          }
-          return;
-        }
-
-        let legacyProgress: PlayerProgress | null = null;
-        let displayName = "Liz";
-        try {
-          const raw = localStorage.getItem(LEGACY_GAME_KEY);
-          if (raw) {
-            const parsed = JSON.parse(raw) as {
-              state?: Record<string, unknown>;
-            };
-            const st = parsed.state;
-            if (st && typeof st === "object") {
-              const base = emptyProgress(
-                typeof st.playerName === "string" ? st.playerName : "Liz",
-              );
-              const merged = {
-                ...base,
-                ...(st as Partial<PlayerProgress>),
-                session: null as null,
-              };
-              const patch = progressToGamePatch(
-                merged,
-                typeof st.playerName === "string" ? st.playerName : "Liz",
-              );
-              useGameStore.setState(patch as never);
-              legacyProgress = snapshotProgress(useGameStore.getState());
-              displayName =
-                typeof st.playerName === "string" && st.playerName.trim()
-                  ? st.playerName.trim()
-                  : "Liz";
+            // Fresh fetch if cloud
+            if (get().cloudEnabled) {
+              const fresh = await fetchProfileById(aid);
+              if (fresh.ok) {
+                set((s) => ({
+                  profiles: { ...s.profiles, [aid]: fresh.data },
+                }));
+                applyProgressToGame(fresh.data.progress, fresh.data.displayName);
+              } else {
+                applyProgressToGame(p.progress, p.displayName);
+              }
+            } else {
+              applyProgressToGame(p.progress, p.displayName);
             }
           }
-        } catch {
-          /* ignore */
+        } finally {
+          // One-shot: ensure every cached profile has inviteCode
+          const profiles = { ...get().profiles };
+          for (const id of Object.keys(profiles)) {
+            profiles[id] = ensureInviteFields(profiles[id]!);
+          }
+          // Always open on profile picker (device shared by siblings)
+          set({
+            profiles,
+            activeProfileId: null,
+            bootstrapped: true,
+            loading: false,
+          });
         }
-
-        if (!legacyProgress) {
-          set({ bootstrapped: true, activeProfileId: null });
-          return;
-        }
-
-        let finalUser = "liz";
-        let n = 1;
-        while (get().isUsernameTaken(finalUser)) {
-          finalUser = `liz${n++}`;
-        }
-
-        const id = newId();
-        const profile: StudentProfile = {
-          id,
-          username: finalUser,
-          displayName,
-          pin: null,
-          createdAt: nowIso(),
-          updatedAt: nowIso(),
-          tournamentEligible: isTournamentEligible(legacyProgress),
-          weekXp: legacyProgress.xp,
-          weekKey: weekKeyNow(),
-          progress: legacyProgress,
-        };
-
-        set({
-          profiles: { [id]: profile },
-          activeProfileId: id,
-          bootstrapped: true,
-        });
-        applyProgressToGame(legacyProgress, displayName);
       },
     }),
     {
       name: "academia-arcana-profiles-v1",
-      version: 1,
+      version: 3,
       partialize: (s) => ({
-        activeProfileId: s.activeProfileId,
+        // Don't persist active session — always open on profile picker
         profiles: s.profiles,
       }),
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<typeof current>;
+        return {
+          ...current,
+          ...p,
+          // Never auto-enter a profile on load (siblings share the device)
+          activeProfileId: null,
+          bootstrapped: false,
+        };
+      },
     },
   ),
 );
@@ -337,3 +889,12 @@ export function usernameAvailability(
 ): UsernameCheck | { ok: false; error: string } {
   return useProfilesStore.getState().checkUsername(raw, exceptId);
 }
+
+export async function usernameAvailabilityAsync(
+  raw: string,
+  exceptId?: string,
+): Promise<UsernameCheck | { ok: false; error: string }> {
+  return useProfilesStore.getState().checkUsernameAsync(raw, exceptId);
+}
+
+export { CLOUD_ERROR_MSG };
