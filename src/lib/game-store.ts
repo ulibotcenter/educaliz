@@ -4,7 +4,9 @@ import {
   ALL_BADGES,
   DEFAULT_AVATAR,
   STORY_CHAPTERS,
+  XP_SHOP,
   levelFromXp,
+  normalizeAvatar,
   type AvatarConfig,
   xpProgress,
 } from "@/lib/progression";
@@ -54,7 +56,7 @@ export type BookFicha = {
 };
 
 export type FocusArea = "math" | "language" | "english" | "balanced";
-export type ThemeId = "chispa" | "trueno";
+export type ThemeId = "aurora" | "trueno";
 
 export type PlaySession = {
   area: "math" | "language" | "english";
@@ -114,6 +116,7 @@ export type GameState = {
   rouletteSpins: number;
   lastRouletteDate: string | null;
   tempBadges: Record<string, number>;
+  ownedShopItems: string[];
   lastAppOpen: string | null;
   view: ViewId;
   activeMathTask: number | null;
@@ -124,6 +127,7 @@ export type GameState = {
   setPlayMode: (m: PlayMode) => void;
   setTheme: (t: ThemeId) => void;
   setAvatar: (partial: Partial<AvatarConfig>) => void;
+  buyShopItem: (itemId: string) => string;
   startMath: (taskId: number) => void;
   startLang: (id: number) => void;
   startEng: (id: number) => void;
@@ -270,7 +274,7 @@ export const useGameStore = create<GameState>()(
       diagnosticDone: false,
       diagnosticSkipped: false,
       suggestedFocus: null,
-      theme: "chispa",
+      theme: "aurora",
       session: null,
       levelRuns: { math: emptyRuns(), language: emptyRuns(), english: emptyRuns() },
       areaSessionCount: { math: 0, language: 0, english: 0 },
@@ -278,6 +282,7 @@ export const useGameStore = create<GameState>()(
       rouletteSpins: 0,
       lastRouletteDate: null,
       tempBadges: {},
+      ownedShopItems: [],
       lastAppOpen: null,
       view: "home",
       activeMathTask: null,
@@ -287,8 +292,28 @@ export const useGameStore = create<GameState>()(
       setView: (v) => set({ view: v }),
       setName: (n) => set({ playerName: n.trim() || "Liz" }),
       setPlayMode: (m) => set({ playMode: m }),
-      setTheme: (t) => set({ theme: t }),
-      setAvatar: (partial) => set({ avatar: { ...get().avatar, ...partial } }),
+      setTheme: (t) => set({ theme: (t as string) === "chispa" ? "aurora" : t }),
+      setAvatar: (partial) =>
+        set({ avatar: normalizeAvatar({ ...get().avatar, ...partial }) }),
+
+      buyShopItem: (itemId) => {
+        const item = XP_SHOP.find((i) => i.id === itemId);
+        if (!item) return "Ese objeto no existe.";
+        const s = get();
+        if (s.ownedShopItems.includes(itemId)) return "¡Ya lo tienes!";
+        if (s.xp < item.cost) {
+          return `Te faltan ${item.cost - s.xp} XP. ¡Sigue practicando!`;
+        }
+        const ownedShopItems = [...s.ownedShopItems, itemId];
+        const xp = s.xp - item.cost;
+        // auto-equip purchased look
+        const avatar = normalizeAvatar({
+          ...s.avatar,
+          [item.slot]: item.optionId,
+        } as Partial<AvatarConfig>);
+        set({ ownedShopItems, xp, avatar });
+        return `¡Comprado! ${item.emoji} ${item.name}`;
+      },
 
       startMath: (taskId) => set({ activeMathTask: taskId, view: "math-play" }),
       startLang: (id) => set({ activeLangId: id, view: "language-play" }),
@@ -620,6 +645,7 @@ export const useGameStore = create<GameState>()(
           rouletteSpins: 0,
           lastRouletteDate: null,
           tempBadges: {},
+          ownedShopItems: [],
           lastAppOpen: null,
           view: "home",
           activeMathTask: null,
@@ -627,7 +653,19 @@ export const useGameStore = create<GameState>()(
           activeEngId: null,
         }),
     }),
-    { name: "liz-academia-arcana-v4" },
+    {
+      name: "liz-academia-arcana-v4",
+      version: 5,
+      migrate: (persisted: unknown, fromVersion: number) => {
+        const p = (persisted ?? {}) as Record<string, unknown>;
+        if (fromVersion < 5) {
+          if (p.theme === "chispa") p.theme = "aurora";
+          if (!Array.isArray(p.ownedShopItems)) p.ownedShopItems = [];
+          p.avatar = normalizeAvatar(p.avatar as Partial<AvatarConfig>);
+        }
+        return p as never;
+      },
+    },
   ),
 );
 

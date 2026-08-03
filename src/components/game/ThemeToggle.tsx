@@ -9,9 +9,9 @@ const THEMES: {
   icon: typeof Moon;
 }[] = [
   {
-    id: "chispa",
-    label: "Chispa",
-    desc: "Lila, rosa y dorado",
+    id: "aurora",
+    label: "Aurora",
+    desc: "Lilás suave y dorado",
     icon: Moon,
   },
   {
@@ -22,27 +22,33 @@ const THEMES: {
   },
 ];
 
+function themeLabel(id: string): string {
+  if (id === "trueno") return "Trueno";
+  return "Aurora";
+}
+
 /** Compact control for header */
 export function ThemeToggle({ compact }: { compact?: boolean }) {
   const theme = useGameStore((s) => s.theme);
   const setTheme = useGameStore((s) => s.setTheme);
+  const current = theme === "trueno" ? "trueno" : "aurora";
 
   if (compact) {
-    const next: ThemeId = theme === "chispa" ? "trueno" : "chispa";
+    const next: ThemeId = current === "aurora" ? "trueno" : "aurora";
     return (
       <button
         type="button"
         onClick={() => setTheme(next)}
         className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-border bg-surface px-3 text-xs font-semibold text-fg"
-        title={`Tema: ${theme === "chispa" ? "Chispa" : "Trueno"}. Toca para cambiar.`}
-        aria-label={`Cambiar tema. Ahora: ${theme}`}
+        title={`Tema: ${themeLabel(current)}. Toca para cambiar.`}
+        aria-label={`Cambiar tema. Ahora: ${themeLabel(current)}`}
       >
-        {theme === "chispa" ? (
+        {current === "aurora" ? (
           <Moon className="h-3.5 w-3.5 text-accent" />
         ) : (
           <Zap className="h-3.5 w-3.5 text-accent-2" />
         )}
-        {theme === "chispa" ? "Chispa" : "Trueno"}
+        {themeLabel(current)}
       </button>
     );
   }
@@ -53,7 +59,7 @@ export function ThemeToggle({ compact }: { compact?: boolean }) {
       <div className="grid grid-cols-2 gap-2">
         {THEMES.map((t) => {
           const Icon = t.icon;
-          const active = theme === t.id;
+          const active = current === t.id;
           return (
             <button
               key={t.id}

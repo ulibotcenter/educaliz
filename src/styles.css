@@ -1,69 +1,75 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Default + Chispa (lila / rosa / dorado) */
+/*
+  Design tokens — learning-friendly, high text contrast.
+  Default = Aurora (soft lilac / soft gold).
+*/
 @theme {
-  --color-bg: #0f0a1a;
-  --color-bg-mid: #1a1230;
-  --color-surface: #241a3d;
-  --color-surface-2: #2f2350;
-  --color-fg: #f3eefc;
-  --color-muted: #b5a8d4;
-  --color-primary: #c9a227;
-  --color-primary-fg: #1a1200;
-  --color-accent: #d478b0;
-  --color-accent-2: #a78bfa;
-  --color-success: #3dd68c;
-  --color-danger: #f07178;
-  --color-border: #3d2f66;
-  --color-card: #1e1535;
+  --color-bg: #14101f;
+  --color-bg-mid: #1c162c;
+  --color-surface: #261f38;
+  --color-surface-2: #322a45;
+  --color-fg: #f6f2fc;
+  --color-muted: #c4b8d8;
+  --color-primary: #d4b06a;
+  --color-primary-fg: #1a1408;
+  --color-accent: #c9a0e8;
+  --color-accent-2: #9b87d8;
+  --color-success: #4ecf93;
+  --color-danger: #e8878f;
+  --color-border: #43385c;
+  --color-card: #1a1428;
   --radius-sm: 0.5rem;
   --radius-md: 0.875rem;
   --radius-lg: 1.25rem;
   --radius-xl: 1.75rem;
   --font-display: "Fraunces", "Georgia", serif;
   --font-sans: "DM Sans", system-ui, sans-serif;
-  --shadow-glow: 0 0 40px rgba(201, 162, 39, 0.18);
+  --shadow-glow: 0 0 40px rgba(201, 160, 232, 0.14);
 }
 
-/* Runtime theme overrides (data-theme on html) */
+/* Aurora — soft dark lilac + light lilac + soft gold (creative, calm magic) */
+html[data-theme="aurora"],
 html[data-theme="chispa"],
 html:not([data-theme]),
+body[data-theme="aurora"],
 body[data-theme="chispa"] {
-  --color-bg: #0f0a1a;
-  --color-bg-mid: #1a1230;
-  --color-surface: #241a3d;
-  --color-surface-2: #322548;
-  --color-fg: #f8f0ff;
-  --color-muted: #c4b0d8;
-  --color-primary: #e0b03a;
-  --color-primary-fg: #1a1200;
-  --color-accent: #e891c0;
-  --color-accent-2: #b794f6;
-  --color-success: #3dd68c;
-  --color-danger: #f07178;
-  --color-border: #4a3568;
-  --color-card: #1c1433;
-  --shadow-glow: 0 0 40px rgba(232, 145, 192, 0.16);
+  --color-bg: #14101f;
+  --color-bg-mid: #1c162c;
+  --color-surface: #261f38;
+  --color-surface-2: #322a45;
+  --color-fg: #f7f3fc;
+  --color-muted: #c8bcd9;
+  --color-primary: #d4b06a;
+  --color-primary-fg: #1a1408;
+  --color-accent: #c9a0e8;
+  --color-accent-2: #a894dc;
+  --color-success: #4ecf93;
+  --color-danger: #e8878f;
+  --color-border: #453a5e;
+  --color-card: #1a1428;
+  --shadow-glow: 0 0 40px rgba(201, 160, 232, 0.15);
 }
 
+/* Trueno — petrol / deep blue + light blue + silver (calm focus) */
 html[data-theme="trueno"],
 body[data-theme="trueno"] {
-  --color-bg: #061018;
-  --color-bg-mid: #0a1c28;
-  --color-surface: #0f2533;
-  --color-surface-2: #153040;
-  --color-fg: #e8f4fc;
-  --color-muted: #8fb0c4;
-  --color-primary: #7ec8e3;
-  --color-primary-fg: #041018;
-  --color-accent: #3d8fb8;
+  --color-bg: #071018;
+  --color-bg-mid: #0b1a24;
+  --color-surface: #102633;
+  --color-surface-2: #173445;
+  --color-fg: #eef6fb;
+  --color-muted: #9bb6c7;
+  --color-primary: #8ec9df;
+  --color-primary-fg: #061018;
+  --color-accent: #4a9fc0;
   --color-accent-2: #c5d5e0;
-  --color-success: #3dd68c;
-  --color-danger: #f07178;
-  --color-border: #1e4055;
+  --color-success: #4ecf93;
+  --color-danger: #e8878f;
+  --color-border: #234658;
   --color-card: #0c1a24;
-  --shadow-glow: 0 0 40px rgba(126, 200, 227, 0.14);
+  --shadow-glow: 0 0 40px rgba(142, 201, 223, 0.13);
 }
 
 @layer base {
@@ -102,14 +108,14 @@ body[data-theme="trueno"] {
 
   .bg-academy {
     background:
-      radial-gradient(ellipse 80% 50% at 50% -10%, color-mix(in oklab, var(--color-accent) 35%, transparent), transparent 55%),
-      radial-gradient(ellipse 60% 40% at 100% 100%, color-mix(in oklab, var(--color-accent-2) 14%, transparent), transparent 50%),
-      radial-gradient(ellipse 50% 30% at 0% 80%, color-mix(in oklab, var(--color-primary) 12%, transparent), transparent 45%),
+      radial-gradient(ellipse 80% 50% at 50% -10%, color-mix(in oklab, var(--color-accent) 28%, transparent), transparent 55%),
+      radial-gradient(ellipse 60% 40% at 100% 100%, color-mix(in oklab, var(--color-accent-2) 12%, transparent), transparent 50%),
+      radial-gradient(ellipse 50% 30% at 0% 80%, color-mix(in oklab, var(--color-primary) 10%, transparent), transparent 45%),
       var(--color-bg);
   }
 
   .card-glow {
-    box-shadow: var(--shadow-glow), 0 8px 32px rgba(0, 0, 0, 0.35);
+    box-shadow: var(--shadow-glow), 0 8px 32px rgba(0, 0, 0, 0.32);
   }
 
   .text-balance {
