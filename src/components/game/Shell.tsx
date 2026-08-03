@@ -4,12 +4,14 @@ import {
   Flame,
   Home,
   Languages,
+  LogOut,
   Sparkles,
   Star,
   Trophy,
   Wand2,
 } from "lucide-react";
 import { useGameStore, type ViewId } from "@/lib/game-store";
+import { useProfilesStore } from "@/lib/profiles";
 import { cn } from "@/lib/utils";
 import { XpBar } from "@/components/game/XpBar";
 import { AvatarPortrait } from "@/components/game/AvatarView";
@@ -24,8 +26,8 @@ const NAV: { id: ViewId; label: string; icon: typeof Home }[] = [
   { id: "math", label: "Mates", icon: Wand2 },
   { id: "language", label: "Lengua", icon: BookOpen },
   { id: "english", label: "English", icon: Languages },
-  { id: "reading", label: "Libros", icon: Sparkles },
-  { id: "progress", label: "Logros", icon: Trophy },
+  { id: "ranking", label: "Torneo", icon: Trophy },
+  { id: "progress", label: "Logros", icon: Sparkles },
 ];
 
 const WHERE: Partial<Record<ViewId, string>> = {
@@ -44,6 +46,8 @@ const WHERE: Partial<Record<ViewId, string>> = {
   progress: "Sala de Trofeos",
   avatar: "Tu avatar",
   diagnostic: "Diagnóstico mágico",
+  ranking: "Ranking y Torneo",
+  profiles: "Perfiles",
 };
 
 export function Shell({ children }: { children: ReactNode }) {
@@ -51,7 +55,12 @@ export function Shell({ children }: { children: ReactNode }) {
   const setView = useGameStore((s) => s.setView);
   const points = useGameStore((s) => s.points);
   const streak = useGameStore((s) => s.streak);
+  const playerName = useGameStore((s) => s.playerName);
   const touchActivity = useGameStore((s) => s.touchActivity);
+  const signOutToPicker = useProfilesStore((s) => s.signOutToPicker);
+  const syncActiveFromGame = useProfilesStore((s) => s.syncActiveFromGame);
+  const getActive = useProfilesStore((s) => s.getActive);
+  const active = getActive();
 
   useEffect(() => {
     touchActivity();
@@ -66,7 +75,9 @@ export function Shell({ children }: { children: ReactNode }) {
           ? "english"
           : view === "avatar" || view === "story" || view === "diagnostic"
             ? "progress"
-            : view;
+            : view === "reading"
+              ? "home"
+              : view;
 
   const where = WHERE[view] ?? "Academia Arcana";
 
@@ -86,13 +97,23 @@ export function Shell({ children }: { children: ReactNode }) {
               <p className="font-display text-sm font-semibold tracking-wide text-fg sm:text-base">
                 Academia Arcana
               </p>
-              <p className="max-w-[10rem] truncate text-xs text-muted sm:max-w-none">
-                {where}
+              <p className="max-w-[11rem] truncate text-xs text-muted sm:max-w-none">
+                {playerName}
+                {active ? ` · @${active.username}` : ""} · {where}
               </p>
             </div>
           </button>
 
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <button
+              type="button"
+              onClick={() => setView("ranking")}
+              className="inline-flex min-h-11 items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 text-xs font-semibold text-fg"
+              title="Ranking y torneo"
+            >
+              <Trophy className="h-3.5 w-3.5 text-primary" />
+              Torneo
+            </button>
             <ThemeToggle compact />
             <XpBar compact />
             <div className="flex min-h-11 items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-sm">
@@ -103,6 +124,19 @@ export function Shell({ children }: { children: ReactNode }) {
               <Flame className="h-4 w-4 text-danger" aria-hidden />
               <span className="font-semibold tabular-nums text-fg">{streak}</span>
             </div>
+            <button
+              type="button"
+              onClick={() => {
+                syncActiveFromGame();
+                signOutToPicker();
+              }}
+              className="inline-flex min-h-11 items-center gap-1 rounded-full border border-border bg-surface px-2.5 text-xs font-semibold text-muted"
+              title="Cambiar de perfil"
+              aria-label="Cambiar de perfil"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Salir</span>
+            </button>
           </div>
         </div>
       </header>
@@ -123,7 +157,7 @@ export function Shell({ children }: { children: ReactNode }) {
       >
         <div className="mx-auto flex max-w-5xl items-stretch justify-between gap-0.5 overflow-x-auto px-1 py-1.5">
           {NAV.map(({ id, label, icon: Icon }) => {
-            const active = activeNav === id;
+            const activeItem = activeNav === id;
             const isDaily = id === "daily";
             return (
               <button
@@ -131,13 +165,13 @@ export function Shell({ children }: { children: ReactNode }) {
                 type="button"
                 onClick={() => setView(id)}
                 className={cn(
-                  "flex min-h-[3.75rem] min-w-[3.35rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[11px] font-semibold transition sm:text-xs",
-                  active
+                  "flex min-h-[3.75rem] min-w-[3.1rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1.5 text-[10px] font-semibold transition sm:text-xs",
+                  activeItem
                     ? isDaily
                       ? "bg-danger/20 text-danger"
                       : "bg-primary/15 text-primary"
                     : "text-muted hover:bg-surface hover:text-fg",
-                  isDaily && !active && "text-danger/90",
+                  isDaily && !activeItem && "text-danger/90",
                 )}
               >
                 <Icon

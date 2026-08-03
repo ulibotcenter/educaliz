@@ -16,6 +16,8 @@ import { AvatarPortrait } from "@/components/game/AvatarView";
 import { ProgressPanel } from "@/components/game/ProgressPanel";
 import { ThemeToggle } from "@/components/game/ThemeToggle";
 import { xpProgress } from "@/lib/progression";
+import { TournamentBanner } from "@/components/game/TournamentBanner";
+import { useProfilesStore } from "@/lib/profiles";
 
 export function HomeView() {
   const setView = useGameStore((s) => s.setView);
@@ -33,6 +35,7 @@ export function HomeView() {
   const setPlayMode = useGameStore((s) => s.setPlayMode);
   const dailyPartsState = useGameStore((s) => s.dailyParts);
   const prog = xpProgress(xp);
+  const active = useProfilesStore((s) => s.getActive());
 
   const day = new Date().getDate();
   const dailyLevel = (Math.min(5, 1 + (day % 5)) || 1) as DiffLevel;
@@ -149,10 +152,13 @@ export function HomeView() {
             </h1>
             <p className="text-sm text-muted">
               Nivel {prog.level} · {prog.title}
+              {active ? ` · @${active.username}` : ""}
             </p>
           </div>
         </div>
       </section>
+
+      <TournamentBanner />
 
       {/* Misión de hoy — hero, first real action */}
       <section className="relative overflow-hidden rounded-2xl border-[3px] border-danger/55 bg-gradient-to-br from-danger/25 via-card to-primary/15 p-5 shadow-[0_0_36px_color-mix(in_oklab,var(--color-danger)_18%,transparent)] sm:p-6">

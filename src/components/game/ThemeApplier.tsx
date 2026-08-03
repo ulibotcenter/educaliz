@@ -1,19 +1,22 @@
 import { useEffect } from "react";
-import { useGameStore, type ThemeId } from "@/lib/game-store";
+import {
+  normalizeThemeId,
+  useGameStore,
+  type ThemeId,
+} from "@/lib/game-store";
 
-const VALID: ThemeId[] = ["aurora", "trueno"];
-
-/** Keeps <html data-theme> in sync with persisted preference */
+/** Keeps <html data-theme> in sync — only "aurora" | "trueno". */
 export function ThemeApplier() {
   const theme = useGameStore((s) => s.theme);
   const setTheme = useGameStore((s) => s.setTheme);
 
-  // One-shot migration for any legacy value still in memory/storage
+  // Heal any legacy value still in memory (e.g. old "chispa")
   useEffect(() => {
-    if (!VALID.includes(theme)) setTheme("aurora");
+    const fixed = normalizeThemeId(theme);
+    if (fixed !== theme) setTheme(fixed);
   }, [theme, setTheme]);
 
-  const resolved: ThemeId = theme === "trueno" ? "trueno" : "aurora";
+  const resolved: ThemeId = normalizeThemeId(theme);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", resolved);

@@ -35,7 +35,9 @@ export type ViewId =
   | "daily"
   | "avatar"
   | "story"
-  | "diagnostic";
+  | "diagnostic"
+  | "ranking"
+  | "profiles";
 
 export type PlayMode = "practice" | "official";
 
@@ -56,7 +58,16 @@ export type BookFicha = {
 };
 
 export type FocusArea = "math" | "language" | "english" | "balanced";
+
+/** Color themes only — never "chispa" (that name is the easy difficulty level). */
 export type ThemeId = "aurora" | "trueno";
+
+/** Map legacy storage value "chispa" → "aurora"; anything else invalid → "aurora". */
+export function normalizeThemeId(raw: unknown): ThemeId {
+  if (raw === "trueno") return "trueno";
+  // "aurora", legacy "chispa", missing, or garbage → aurora
+  return "aurora";
+}
 
 export type PlaySession = {
   area: "math" | "language" | "english";
@@ -145,34 +156,47 @@ export type GameState = {
   resetProgress: () => void;
 };
 
-const emptyBook = (): BookFicha => ({
-  titulo: "",
-  trata: "",
-  gusto: "",
-  nota: 0,
-  dibujo: "⭐",
-  completed: false,
-});
+function emptyBook(): BookFicha {
+  return {
+    titulo: "",
+    trata: "",
+    gusto: "",
+    nota: 0,
+    dibujo: "⭐",
+    completed: false,
+  };
+}
 
-const today = () => new Date().toISOString().slice(0, 10);
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function ensureDaily(d: DailyParts): DailyParts {
+  const t = today();
+  if (d.date === t) return d;
+  return { date: t, math: false, language: false, english: false };
+}
 
 function maybeAddBadge(badges: string[], id: string): string[] {
   if (badges.includes(id)) return badges;
   return [...badges, id];
 }
 
-function trackNewBadges(prev: string[], next: string[], recent: string[]): string[] {
-  const added = next.filter((id) => !prev.includes(id));
+function trackNewBadges(
+  before: string[],
+  after: string[],
+  recent: string[],
+): string[] {
+  const added = after.filter((b) => !before.includes(b));
   if (added.length === 0) return recent;
-  return [...added, ...recent].slice(0, 12);
+  return [...added, ...recent].slice(0, 8);
 }
 
 function bumpSkill(
   stats: Record<string, SkillStat>,
-  tag: string | undefined,
+  tag: string,
   result: "ok" | "bad",
 ): Record<string, SkillStat> {
-  if (!tag) return stats;
   const cur = stats[tag] ?? { ok: 0, bad: 0 };
   return {
     ...stats,
@@ -185,54 +209,43 @@ function bumpSkill(
 
 function unlockStoriesForState(s: {
   xp: number;
-  streak: number;
   badges: string[];
-  unlockedStories: string[];
   bossBeaten: { math: boolean; language: boolean; english: boolean };
+  streak: number;
   mathCompleted: number[];
   languageCompleted: number[];
-}): { unlockedStories: string[]; pendingStoryId: string | null; newIds: string[] } {
+  unlockedStories: string[];
+  pendingStoryId: string | null;
+}): { unlockedStories: string[]; pendingStoryId: string | null } {
   const level = levelFromXp(s.xp);
   const unlocked = new Set(s.unlockedStories);
-  const newIds: string[] = [];
-
+  let pending = s.pendingStoryId;
   for (const ch of STORY_CHAPTERS) {
     if (unlocked.has(ch.id)) continue;
     let ok = false;
-    if (ch.unlock === "level" && level >= Number(ch.value)) ok = true;
-    if (ch.unlock === "streak" && s.streak >= Number(ch.value)) ok = true;
+    if (ch.unlock === "level" && typeof ch.value === "number" && level >= ch.value)
+      ok = true;
     if (ch.unlock === "boss" && ch.value === "math" && s.bossBeaten.math) ok = true;
-    if (ch.unlock === "boss" && ch.value === "language" && s.bossBeaten.language) ok = true;
-    if (ch.unlock === "boss" && ch.value === "english" && s.bossBeaten.english) ok = true;
+    if (ch.unlock === "boss" && ch.value === "language" && s.bossBeaten.language)
+      ok = true;
+    if (ch.unlock === "boss" && ch.value === "english" && s.bossBeaten.english)
+      ok = true;
+    if (ch.unlock === "streak" && typeof ch.value === "number" && s.streak >= ch.value)
+      ok = true;
     if (ch.unlock === "zone" && ch.value === "math-half" && s.mathCompleted.length >= 15)
       ok = true;
-    if (ch.unlock === "zone" && ch.value === "lang-half" && s.languageCompleted.length >= 8)
+    if (
+      ch.unlock === "zone" &&
+      ch.value === "lang-half" &&
+      s.languageCompleted.length >= 10
+    )
       ok = true;
     if (ok) {
       unlocked.add(ch.id);
-      newIds.push(ch.id);
+      if (!pending) pending = ch.id;
     }
   }
-
-  if (!unlocked.has("intro")) {
-    unlocked.add("intro");
-    if (!s.unlockedStories.includes("intro")) newIds.push("intro");
-  }
-
-  const list = [...unlocked];
-  const pending = newIds.length > 0 ? newIds[newIds.length - 1]! : null;
-
-  return {
-    unlockedStories: list,
-    pendingStoryId: pending && !s.unlockedStories.includes(pending) ? pending : null,
-    newIds,
-  };
-}
-
-function ensureDaily(parts: DailyParts): DailyParts {
-  const d = today();
-  if (parts.date === d) return parts;
-  return emptyDaily();
+  return { unlockedStories: [...unlocked], pendingStoryId: pending };
 }
 
 export const useGameStore = create<GameState>()(
@@ -278,7 +291,7 @@ export const useGameStore = create<GameState>()(
       setView: (v) => set({ view: v }),
       setName: (n) => set({ playerName: n.trim() || "Liz" }),
       setPlayMode: (m) => set({ playMode: m }),
-      setTheme: (t) => set({ theme: t }),
+      setTheme: (t) => set({ theme: normalizeThemeId(t) }),
       setAvatar: (partial) =>
         set({ avatar: normalizeAvatar({ ...get().avatar, ...partial }) }),
 
@@ -292,7 +305,6 @@ export const useGameStore = create<GameState>()(
         }
         const ownedShopItems = [...s.ownedShopItems, itemId];
         const xp = s.xp - item.cost;
-        // auto-equip purchased look
         const avatar = normalizeAvatar({
           ...s.avatar,
           [item.slot]: item.optionId,
@@ -305,7 +317,8 @@ export const useGameStore = create<GameState>()(
         const n = 5;
         let ids: string[] = [];
         if (area === "math") ids = pickMathSession(level, n).map((q) => q.id);
-        else if (area === "language") ids = pickLangSession(level, n).map((q) => q.id);
+        else if (area === "language")
+          ids = pickLangSession(level, n).map((q) => q.id);
         else ids = pickEngSession(level, n).map((q) => q.id);
         const view =
           area === "math"
@@ -337,16 +350,46 @@ export const useGameStore = create<GameState>()(
           ...s.areaSessionCount,
           [sess.area]: s.areaSessionCount[sess.area] + 1,
         };
-        const token = Math.floor(Date.now() / 1000) + areaSessionCount[sess.area];
+        const token =
+          Math.floor(Date.now() / 1000) + areaSessionCount[sess.area];
         let mathCompleted = s.mathCompleted;
         let languageCompleted = s.languageCompleted;
         let englishCompleted = s.englishCompleted;
         if (sess.area === "math") mathCompleted = [...mathCompleted, token];
-        if (sess.area === "language") languageCompleted = [...languageCompleted, token];
-        if (sess.area === "english") englishCompleted = [...englishCompleted, token];
+        if (sess.area === "language")
+          languageCompleted = [...languageCompleted, token];
+        if (sess.area === "english")
+          englishCompleted = [...englishCompleted, token];
 
         const dailyParts = { ...ensureDaily(s.dailyParts) };
         dailyParts[sess.area] = true;
+
+        // area badges (soft thresholds)
+        let badges = s.badges;
+        if (sess.area === "math") {
+          if (mathCompleted.length >= 5) badges = maybeAddBadge(badges, "math-5");
+          if (mathCompleted.length >= 15) badges = maybeAddBadge(badges, "math-15");
+          if (mathCompleted.length >= 30) badges = maybeAddBadge(badges, "math-all");
+        }
+        if (sess.area === "language") {
+          if (languageCompleted.length >= 5)
+            badges = maybeAddBadge(badges, "lang-5");
+          if (languageCompleted.length >= 15)
+            badges = maybeAddBadge(badges, "lang-all");
+        }
+        if (sess.area === "english") {
+          if (englishCompleted.length >= 4)
+            badges = maybeAddBadge(badges, "eng-half");
+          if (englishCompleted.length >= 12)
+            badges = maybeAddBadge(badges, "eng-all");
+        }
+        const recentBadgeIds = trackNewBadges(s.badges, badges, s.recentBadgeIds);
+        const story = unlockStoriesForState({
+          ...s,
+          mathCompleted,
+          languageCompleted,
+          badges,
+        });
 
         set({
           session: null,
@@ -357,17 +400,19 @@ export const useGameStore = create<GameState>()(
           englishCompleted,
           dailyParts,
           rouletteSpins: s.rouletteSpins + 1,
+          badges,
+          recentBadgeIds,
+          unlockedStories: story.unlockedStories,
+          pendingStoryId: story.pendingStoryId,
         });
       },
 
       touchActivity: () => {
         const s = get();
         const now = Date.now();
-        const last = s.lastAppOpen ? Date.parse(s.lastAppOpen) : 0;
         let tempBadges = { ...s.tempBadges };
-        if (last && now - last > 24 * 60 * 60 * 1000) {
-          tempBadges = {};
-        }
+        const last = s.lastAppOpen ? Date.parse(s.lastAppOpen) : 0;
+        if (last && now - last > 24 * 60 * 60 * 1000) tempBadges = {};
         for (const [id, exp] of Object.entries(tempBadges)) {
           if (exp <= now) delete tempBadges[id];
         }
@@ -615,8 +660,13 @@ export const useGameStore = create<GameState>()(
           diagnosticDone: false,
           diagnosticSkipped: false,
           suggestedFocus: null,
+          theme: "aurora",
           session: null,
-          levelRuns: { math: emptyRuns(), language: emptyRuns(), english: emptyRuns() },
+          levelRuns: {
+            math: emptyRuns(),
+            language: emptyRuns(),
+            english: emptyRuns(),
+          },
           areaSessionCount: { math: 0, language: 0, english: 0 },
           dailyParts: emptyDaily(),
           rouletteSpins: 0,
@@ -629,13 +679,13 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: "liz-academia-arcana-v4",
-      version: 6,
-      migrate: (persisted: unknown, fromVersion: number) => {
+      version: 7,
+      migrate: (persisted: unknown, _fromVersion: number) => {
         const p = (persisted ?? {}) as Record<string, unknown>;
-        // Always map legacy theme id
-        if (p.theme === "chispa" || !p.theme) p.theme = "aurora";
-        if (fromVersion < 5) {
-          if (!Array.isArray(p.ownedShopItems)) p.ownedShopItems = [];
+        // Legacy theme id "chispa" → "aurora" (always)
+        p.theme = normalizeThemeId(p.theme);
+        if (!Array.isArray(p.ownedShopItems)) p.ownedShopItems = [];
+        if (p.avatar) {
           p.avatar = normalizeAvatar(p.avatar as Partial<AvatarConfig>);
         }
         // Drop legacy mission fields if present
@@ -644,6 +694,15 @@ export const useGameStore = create<GameState>()(
         delete p.activeEngId;
         delete p.mathExerciseDone;
         return p as never;
+      },
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<GameState>;
+        return {
+          ...current,
+          ...p,
+          theme: normalizeThemeId(p.theme ?? current.theme),
+          avatar: normalizeAvatar(p.avatar ?? current.avatar),
+        } as GameState;
       },
     },
   ),

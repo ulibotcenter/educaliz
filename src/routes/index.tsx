@@ -13,30 +13,59 @@ import { ProgressView } from "@/components/game/ProgressView";
 import { AvatarCustomizer } from "@/components/game/AvatarView";
 import { BossBattle } from "@/components/game/BossBattle";
 import { DiagnosticView } from "@/components/game/DiagnosticView";
+import { RankingView } from "@/components/game/RankingView";
+import { ProfileGate } from "@/components/game/ProfileGate";
+import { ProfileSync } from "@/components/game/ProfileSync";
 import { useGameStore } from "@/lib/game-store";
+import { useProfilesStore } from "@/lib/profiles";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/")({ component: App });
 
 function App() {
   const view = useGameStore((s) => s.view);
+  const activeProfileId = useProfilesStore((s) => s.activeProfileId);
+  const bootstrapped = useProfilesStore((s) => s.bootstrapped);
+  const bootstrapFromLegacy = useProfilesStore((s) => s.bootstrapFromLegacy);
+
+  useEffect(() => {
+    bootstrapFromLegacy();
+  }, [bootstrapFromLegacy]);
+
+  if (!bootstrapped) {
+    return (
+      <div className="grid min-h-[50vh] place-items-center bg-academy text-muted">
+        Abriendo la Academia…
+      </div>
+    );
+  }
+
+  if (!activeProfileId) {
+    return <ProfileGate />;
+  }
 
   return (
-    <Shell>
-      {view === "home" && <HomeView />}
-      {view === "daily" && <DailyMission />}
-      {view === "diagnostic" && <DiagnosticView />}
-      {view === "math" && <MathMap />}
-      {view === "math-play" && <MathPlay />}
-      {view === "math-boss" && <BossBattle zone="math" />}
-      {view === "language" && <LanguageMap />}
-      {view === "language-play" && <LanguagePlay />}
-      {view === "language-boss" && <BossBattle zone="language" />}
-      {view === "english" && <EnglishMap />}
-      {view === "english-play" && <EnglishPlay />}
-      {view === "english-boss" && <BossBattle zone="english" />}
-      {view === "reading" && <ReadingJournal />}
-      {view === "progress" && <ProgressView />}
-      {view === "avatar" && <AvatarCustomizer />}
-    </Shell>
+    <>
+      <ProfileSync />
+      <Shell>
+        {view === "home" && <HomeView />}
+        {view === "daily" && <DailyMission />}
+        {view === "diagnostic" && <DiagnosticView />}
+        {view === "math" && <MathMap />}
+        {view === "math-play" && <MathPlay />}
+        {view === "math-boss" && <BossBattle zone="math" />}
+        {view === "language" && <LanguageMap />}
+        {view === "language-play" && <LanguagePlay />}
+        {view === "language-boss" && <BossBattle zone="language" />}
+        {view === "english" && <EnglishMap />}
+        {view === "english-play" && <EnglishPlay />}
+        {view === "english-boss" && <BossBattle zone="english" />}
+        {view === "reading" && <ReadingJournal />}
+        {view === "progress" && <ProgressView />}
+        {view === "avatar" && <AvatarCustomizer />}
+        {view === "ranking" && <RankingView />}
+        {view === "profiles" && <ProfileGate />}
+      </Shell>
+    </>
   );
 }
