@@ -1,0 +1,20 @@
+import { chromium } from "playwright";
+const browser = await chromium.launch({ headless: true });
+const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+await page.goto("http://127.0.0.1:8080/", { waitUntil: "networkidle" });
+await page.evaluate(() => localStorage.clear());
+await page.reload({ waitUntil: "networkidle" });
+await page.waitForTimeout(600);
+if (await page.getByRole("button", { name: /Ahora no/i }).count())
+  await page.getByRole("button", { name: /Ahora no/i }).click();
+await page.getByRole("button", { name: /Torre de Números/i }).click();
+await page.waitForTimeout(500);
+const t = await page.locator("body").innerText();
+console.log(t.match(/Chispa[\s\S]{0,80}/)?.[0]);
+console.log(t.match(/\d+ preguntas/g));
+await page.screenshot({ path: "/workspace/screenshots/v4-math-levels.png", fullPage: true });
+await page.getByRole("button", { name: /^Lengua$/ }).click();
+await page.waitForTimeout(400);
+console.log("lang", (await page.locator("body").innerText()).match(/\d+ preguntas/g));
+await page.screenshot({ path: "/workspace/screenshots/v4-lang-levels.png", fullPage: true });
+await browser.close();
