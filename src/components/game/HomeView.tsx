@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useGameStore } from "@/lib/game-store";
 import { LEVEL_META, type DiffLevel } from "@/lib/data/question-banks";
+import { getDailyLevel } from "@/lib/daily";
 import { cn } from "@/lib/utils";
 import { AvatarPortrait } from "@/components/game/AvatarView";
 import { ProgressPanel } from "@/components/game/ProgressPanel";
@@ -34,14 +35,18 @@ export function HomeView() {
   const startLevel = useGameStore((s) => s.startLevel);
   const setPlayMode = useGameStore((s) => s.setPlayMode);
   const dailyPartsState = useGameStore((s) => s.dailyParts);
+  const areaSessionCount = useGameStore((s) => s.areaSessionCount);
+  const levelRuns = useGameStore((s) => s.levelRuns);
   const prog = xpProgress(xp);
   const activeId = useProfilesStore((s) => s.activeProfileId);
   const active = useProfilesStore((s) =>
     activeId ? s.profiles[activeId] ?? null : null,
   );
 
-  const day = new Date().getDate();
-  const dailyLevel = (Math.min(5, 1 + (day % 5)) || 1) as DiffLevel;
+  const dailyLevel = getDailyLevel({
+    areaSessionCount,
+    levelRuns,
+  });
   const levelName = LEVEL_META[dailyLevel].name;
   const today = new Date().toISOString().slice(0, 10);
   const dp =

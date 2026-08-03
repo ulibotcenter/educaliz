@@ -1,6 +1,7 @@
 import { CheckCircle2, Flame, PartyPopper, Play, Sparkles } from "lucide-react";
 import { useGameStore } from "@/lib/game-store";
-import { LEVEL_META, type DiffLevel } from "@/lib/data/question-banks";
+import { LEVEL_META } from "@/lib/data/question-banks";
+import { getDailyLevel } from "@/lib/daily";
 import { cn } from "@/lib/utils";
 
 export function DailyMission() {
@@ -10,6 +11,8 @@ export function DailyMission() {
   const name = useGameStore((s) => s.playerName);
   const suggestedFocus = useGameStore((s) => s.suggestedFocus);
   const dailyPartsState = useGameStore((s) => s.dailyParts);
+  const areaSessionCount = useGameStore((s) => s.areaSessionCount);
+  const levelRuns = useGameStore((s) => s.levelRuns);
 
   const today = new Date().toISOString().slice(0, 10);
   const dp =
@@ -17,8 +20,7 @@ export function DailyMission() {
       ? dailyPartsState
       : { date: today, math: false, language: false, english: false };
 
-  const day = new Date().getDate();
-  const level = (Math.min(5, 1 + (day % 5)) || 1) as DiffLevel;
+  const level = getDailyLevel({ areaSessionCount, levelRuns });
   const levelName = LEVEL_META[level].name;
 
   const items = [
