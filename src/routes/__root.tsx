@@ -18,7 +18,7 @@ export const Route = createRootRoute({
       {
         name: "description",
         content:
-          "Academia Arcana: misiones de verano de 4º a 5º de primaria con matemáticas, lengua e inglés. Magia, aventura y misterio.",
+          "Academia Arcana: aventura de verano de 4º a 5º con matemáticas, lengua e inglés. Niveles mágicos, práctica y progreso.",
       },
       ...(ogImage
         ? [

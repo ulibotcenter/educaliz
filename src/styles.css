@@ -29,12 +29,10 @@
   --shadow-glow: 0 0 40px rgba(201, 160, 232, 0.14);
 }
 
-/* Aurora — soft dark lilac + light lilac + soft gold (creative, calm magic) */
+/* Aurora — soft dark lilac + light lilac + soft gold */
 html[data-theme="aurora"],
-html[data-theme="chispa"],
 html:not([data-theme]),
-body[data-theme="aurora"],
-body[data-theme="chispa"] {
+body[data-theme="aurora"] {
   --color-bg: #14101f;
   --color-bg-mid: #1c162c;
   --color-surface: #261f38;
@@ -52,7 +50,7 @@ body[data-theme="chispa"] {
   --shadow-glow: 0 0 40px rgba(201, 160, 232, 0.15);
 }
 
-/* Trueno — petrol / deep blue + light blue + silver (calm focus) */
+/* Trueno — petrol / deep blue + light blue + silver */
 html[data-theme="trueno"],
 body[data-theme="trueno"] {
   --color-bg: #071018;
@@ -85,9 +83,10 @@ body[data-theme="trueno"] {
     margin: 0;
     min-height: 100dvh;
     font-family: var(--font-sans);
+    font-size: 16px;
     background: var(--color-bg);
     color: var(--color-fg);
-    line-height: 1.5;
+    line-height: 1.55;
     -webkit-font-smoothing: antialiased;
   }
 
@@ -200,4 +199,14 @@ body[data-theme="trueno"] {
   [role="option"] {
     min-height: 2.75rem;
   }
+}
+
+
+@keyframes temp-badge-pulse {
+  0%, 100% { box-shadow: 0 0 10px color-mix(in oklab, var(--color-accent) 35%, transparent); }
+  50% { box-shadow: 0 0 22px color-mix(in oklab, var(--color-primary) 45%, transparent); }
+}
+
+.temp-badge-pulse {
+  animation: temp-badge-pulse 2.4s ease-in-out infinite;
 }

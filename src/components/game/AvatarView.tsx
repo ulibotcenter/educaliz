@@ -17,6 +17,8 @@ const SKIN_FACE: Record<AvatarConfig["skin"], string> = {
   warm: "👧🏻",
   deep: "👩🏽",
   rose: "👩🏻",
+  peach: "👧🏻",
+  olive: "👩🏽‍🦱",
 };
 
 const HAT_EMOJI: Record<AvatarConfig["hat"], string> = {
@@ -27,7 +29,11 @@ const HAT_EMOJI: Record<AvatarConfig["hat"], string> = {
   beret: "🎩",
   flower: "🌸",
   crystal: "💎",
+  moon: "🌙",
+  leaf: "🍃",
+  comet: "☄️",
   phoenix: "🔥",
+  nebula: "🌌",
 };
 
 const FAMILIAR_EMOJI: Record<AvatarConfig["familiar"], string> = {
@@ -39,6 +45,9 @@ const FAMILIAR_EMOJI: Record<AvatarConfig["familiar"], string> = {
   spark: "✨",
   phoenix: "🐦",
   unicorn: "🦄",
+  wolf: "🐺",
+  raven: "🐦‍⬛",
+  otter: "🦦",
 };
 
 const ACC_EMOJI: Record<AvatarConfig["accessory"], string> = {
@@ -48,6 +57,10 @@ const ACC_EMOJI: Record<AvatarConfig["accessory"], string> = {
   amulet: "🔮",
   wings: "🪽",
   badge: "🏅",
+  bow: "🎀",
+  earrings: "🌙",
+  halo: "💫",
+  belt: "⚡",
 };
 
 const CAPE_CLASS: Record<AvatarConfig["cape"], string> = {
@@ -59,6 +72,9 @@ const CAPE_CLASS: Record<AvatarConfig["cape"], string> = {
   emerald: "from-emerald-500/85 to-green-900/85",
   silver: "from-slate-300/90 to-slate-600/90",
   aurora: "from-fuchsia-400/80 via-violet-500/80 to-amber-300/80",
+  coral: "from-orange-400/85 to-rose-700/85",
+  ice: "from-sky-200/90 to-cyan-700/85",
+  starlight: "from-yellow-200/90 via-violet-400/80 to-indigo-800/90",
 };
 
 const WAND_CLASS: Record<AvatarConfig["wand"], string> = {
@@ -70,6 +86,21 @@ const WAND_CLASS: Record<AvatarConfig["wand"], string> = {
   starlight: "bg-yellow-200 shadow-yellow-200/60",
   shadow: "bg-slate-700 shadow-slate-700/50",
   rainbow: "bg-gradient-to-b from-pink-400 via-violet-400 to-cyan-400 shadow-violet-400/50",
+  crystal: "bg-cyan-100 shadow-cyan-200/60",
+  moon: "bg-indigo-200 shadow-indigo-200/50",
+  comet: "bg-gradient-to-b from-amber-200 via-orange-400 to-violet-600 shadow-orange-400/50",
+};
+
+const RARITY_LABEL: Record<string, string> = {
+  rara: "Rara",
+  épica: "Épica",
+  legendaria: "Legendaria",
+};
+
+const RARITY_CLASS: Record<string, string> = {
+  rara: "border-accent/40 bg-accent/10 text-accent",
+  épica: "border-primary/50 bg-primary/15 text-primary",
+  legendaria: "border-amber-300/50 bg-amber-300/15 text-amber-200",
 };
 
 export function AvatarPortrait({
@@ -83,8 +114,8 @@ export function AvatarPortrait({
   const avatar = normalizeAvatar(raw);
   const xp = useGameStore((s) => s.xp);
   const level = levelFromXp(xp);
-  const dim = size === "sm" ? "h-14 w-14" : size === "lg" ? "h-36 w-36" : "h-24 w-24";
-  const face = size === "sm" ? "text-2xl" : size === "lg" ? "text-6xl" : "text-4xl";
+  const dim = size === "sm" ? "h-14 w-14" : size === "lg" ? "h-40 w-40" : "h-24 w-24";
+  const face = size === "sm" ? "text-2xl" : size === "lg" ? "text-7xl" : "text-4xl";
   const glow =
     level >= 8
       ? "ring-2 ring-primary shadow-lg shadow-primary/30"
@@ -94,7 +125,7 @@ export function AvatarPortrait({
 
   return (
     <div className={cn("relative inline-flex flex-col items-center", className)}>
-      {avatar.accessory === "wings" && (
+      {(avatar.accessory === "wings" || avatar.accessory === "halo") && (
         <span
           className={cn(
             "pointer-events-none absolute left-1/2 top-1/2 -z-0 -translate-x-1/2 -translate-y-1/2 opacity-90",
@@ -102,7 +133,7 @@ export function AvatarPortrait({
           )}
           aria-hidden
         >
-          🪽
+          {avatar.accessory === "halo" ? "💫" : "🪽"}
         </span>
       )}
       <div
@@ -117,7 +148,7 @@ export function AvatarPortrait({
           <span
             className={cn(
               "absolute -top-1 left-1/2 -translate-x-1/2",
-              size === "sm" ? "text-sm" : "text-xl",
+              size === "sm" ? "text-sm" : size === "lg" ? "text-2xl" : "text-xl",
             )}
             aria-hidden
           >
@@ -127,17 +158,19 @@ export function AvatarPortrait({
         <span className={face} aria-hidden>
           {SKIN_FACE[avatar.skin] ?? "👧"}
         </span>
-        {avatar.accessory !== "none" && avatar.accessory !== "wings" && (
-          <span
-            className={cn(
-              "absolute -left-0.5 bottom-1",
-              size === "sm" ? "text-[10px]" : "text-sm",
-            )}
-            aria-hidden
-          >
-            {ACC_EMOJI[avatar.accessory]}
-          </span>
-        )}
+        {avatar.accessory !== "none" &&
+          avatar.accessory !== "wings" &&
+          avatar.accessory !== "halo" && (
+            <span
+              className={cn(
+                "absolute -left-0.5 bottom-1",
+                size === "sm" ? "text-[10px]" : "text-sm",
+              )}
+              aria-hidden
+            >
+              {ACC_EMOJI[avatar.accessory]}
+            </span>
+          )}
         <span
           className={cn(
             "absolute -right-1 bottom-2 h-8 w-1.5 rounded-full shadow-md",
@@ -150,8 +183,8 @@ export function AvatarPortrait({
       </div>
       <span
         className={cn(
-          "absolute -bottom-1 -right-1 z-[2] rounded-full bg-card px-1",
-          size === "sm" ? "text-sm" : "text-xl",
+          "absolute -bottom-1 -right-1 z-[2] rounded-full bg-card px-1 shadow-md",
+          size === "sm" ? "text-sm" : size === "lg" ? "text-2xl" : "text-xl",
         )}
         aria-hidden
       >
@@ -166,13 +199,14 @@ type Tab = "look" | "shop";
 const SECTIONS: {
   key: keyof typeof AVATAR_OPTIONS;
   label: string;
+  emoji: string;
 }[] = [
-  { key: "skin", label: "Tono" },
-  { key: "hat", label: "Sombrero" },
-  { key: "cape", label: "Capa" },
-  { key: "wand", label: "Varita" },
-  { key: "familiar", label: "Familiar" },
-  { key: "accessory", label: "Accesorio" },
+  { key: "skin", label: "Tono", emoji: "🎨" },
+  { key: "hat", label: "Sombrero", emoji: "👑" },
+  { key: "cape", label: "Capa", emoji: "🧥" },
+  { key: "wand", label: "Varita", emoji: "🪄" },
+  { key: "familiar", label: "Familiar", emoji: "🦉" },
+  { key: "accessory", label: "Accesorio", emoji: "✨" },
 ];
 
 export function AvatarCustomizer() {
@@ -188,6 +222,7 @@ export function AvatarCustomizer() {
   const prog = xpProgress(xp);
   const [tab, setTab] = useState<Tab>("look");
   const [shopMsg, setShopMsg] = useState<string | null>(null);
+  const [section, setSection] = useState<keyof typeof AVATAR_OPTIONS>("hat");
 
   const unlockCtx = {
     level: prog.level,
@@ -195,21 +230,41 @@ export function AvatarCustomizer() {
     ownedShop: ownedShopItems,
   };
 
+  const unlockedCount = SECTIONS.reduce((acc, { key }) => {
+    return (
+      acc +
+      AVATAR_OPTIONS[key].filter((o) => isAvatarOptionUnlocked(o, unlockCtx).ok).length
+    );
+  }, 0);
+  const totalCount = SECTIONS.reduce((acc, { key }) => acc + AVATAR_OPTIONS[key].length, 0);
+
   return (
     <div className="mx-auto max-w-lg space-y-5">
       <div className="space-y-1">
         <h1 className="font-display text-2xl font-semibold text-fg">Tu avatar, {name}</h1>
         <p className="text-sm text-muted">
-          Nivel {prog.level} · {prog.title}. Personaliza tu look o visita la Tienda de XP.
+          Nivel {prog.level} · {prog.title}. ¡Prueba combinaciones mágicas!
         </p>
       </div>
 
-      <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card p-6 card-glow">
-        <AvatarPortrait size="lg" />
-        <p className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-sm font-semibold text-fg">
-          <Star className="h-3.5 w-3.5 text-primary" aria-hidden />
-          {xp} XP disponibles
-        </p>
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-6 card-glow">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-40"
+          style={{
+            background:
+              "radial-gradient(circle at 50% 20%, color-mix(in oklab, var(--color-accent) 35%, transparent), transparent 55%)",
+          }}
+        />
+        <div className="relative flex flex-col items-center gap-3">
+          <AvatarPortrait size="lg" />
+          <p className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-sm font-semibold text-fg">
+            <Star className="h-3.5 w-3.5 text-primary" aria-hidden />
+            {xp} XP · {unlockedCount}/{totalCount} looks
+          </p>
+          <p className="text-center text-xs text-muted">
+            Toca una opción y el retrato se actualiza al instante.
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2 rounded-xl border border-border bg-surface/50 p-1">
@@ -237,49 +292,77 @@ export function AvatarCustomizer() {
       </div>
 
       {tab === "look" && (
-        <div className="space-y-5">
+        <div className="space-y-4">
           <p className="text-sm text-muted">
-            Lo básico está libre. Sube de nivel, gana insignias o compra en la tienda para looks
+            Lo básico está libre. Sube de nivel, gana insignias o visita la tienda para looks
             especiales.
           </p>
-          {SECTIONS.map(({ key, label }) => (
-            <section key={key} className="space-y-2">
-              <h2 className="text-sm font-semibold text-fg">{label}</h2>
-              <div className="grid grid-cols-2 gap-2">
-                {AVATAR_OPTIONS[key].map((o) => {
-                  const { ok, reason } = isAvatarOptionUnlocked(o, unlockCtx);
-                  const active = avatar[key] === o.id;
-                  return (
-                    <button
-                      key={o.id}
-                      type="button"
-                      disabled={!ok}
-                      onClick={() =>
-                        setAvatar({ [key]: o.id } as Partial<AvatarConfig>)
-                      }
-                      className={cn(
-                        "min-h-12 rounded-xl border px-3 py-2 text-left text-sm transition",
-                        active && ok && "border-primary bg-primary/15",
-                        !active && ok && "border-border bg-surface hover:border-primary/40",
-                        !ok && "cursor-not-allowed border-border/50 bg-surface/40 opacity-55",
-                      )}
-                    >
-                      <span className="flex items-center gap-1.5 font-medium text-fg">
-                        <span aria-hidden>{o.emoji}</span>
-                        {o.label}
+
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {SECTIONS.map(({ key, label, emoji }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setSection(key)}
+                className={cn(
+                  "inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition",
+                  section === key
+                    ? "border-primary bg-primary/20 text-fg"
+                    : "border-border bg-surface text-muted",
+                )}
+              >
+                <span aria-hidden>{emoji}</span>
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <section className="space-y-2">
+            <h2 className="text-sm font-semibold text-fg">
+              {SECTIONS.find((s) => s.key === section)?.emoji}{" "}
+              {SECTIONS.find((s) => s.key === section)?.label}
+            </h2>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {AVATAR_OPTIONS[section].map((o) => {
+                const { ok, reason } = isAvatarOptionUnlocked(o, unlockCtx);
+                const active = avatar[section] === o.id;
+                return (
+                  <button
+                    key={o.id}
+                    type="button"
+                    disabled={!ok}
+                    onClick={() =>
+                      setAvatar({ [section]: o.id } as Partial<AvatarConfig>)
+                    }
+                    className={cn(
+                      "min-h-[4.5rem] rounded-2xl border px-2.5 py-3 text-center transition",
+                      active && ok && "border-primary bg-primary/20 ring-1 ring-primary/40",
+                      !active && ok && "border-border bg-surface hover:border-primary/40",
+                      !ok && "cursor-not-allowed border-border/50 bg-surface/40 opacity-55",
+                    )}
+                  >
+                    <span className="block text-2xl" aria-hidden>
+                      {o.emoji === "·" ? "○" : o.emoji}
+                    </span>
+                    <span className="mt-1 block text-xs font-semibold leading-snug text-fg">
+                      {o.label}
+                    </span>
+                    {"tag" in o && o.tag === "tienda" && ok && (
+                      <span className="mt-1 inline-block rounded-full bg-primary/15 px-1.5 text-[10px] font-medium text-primary">
+                        tienda
                       </span>
-                      {!ok && (
-                        <span className="mt-0.5 flex items-center gap-1 text-[11px] text-muted">
-                          <Lock className="h-3 w-3" aria-hidden />
-                          {reason}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-          ))}
+                    )}
+                    {!ok && (
+                      <span className="mt-1 flex items-center justify-center gap-1 text-[10px] text-muted">
+                        <Lock className="h-3 w-3" aria-hidden />
+                        {reason}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
         </div>
       )}
 
@@ -295,7 +378,7 @@ export function AvatarCustomizer() {
                   Tienda mágica de XP
                 </h2>
                 <p className="text-sm text-muted">
-                  Opcional: gasta XP en aderezos exclusivos. No es obligatorio para progresar.
+                  Opcional: gasta XP en aderezos exclusivos. Se equipan al comprar.
                 </p>
                 <p className="mt-1 text-sm font-semibold text-fg">Tu saldo: {xp} XP</p>
               </div>
@@ -306,10 +389,16 @@ export function AvatarCustomizer() {
             {XP_SHOP.map((item) => {
               const owned = ownedShopItems.includes(item.id);
               const canAfford = xp >= item.cost;
+              const equipped =
+                owned &&
+                (avatar[item.slot] as string) === item.optionId;
               return (
                 <li
                   key={item.id}
-                  className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center"
+                  className={cn(
+                    "flex flex-col gap-3 rounded-2xl border bg-card p-4 sm:flex-row sm:items-center",
+                    owned ? "border-success/35" : "border-border",
+                  )}
                 >
                   <span
                     className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-surface text-2xl"
@@ -318,7 +407,17 @@ export function AvatarCustomizer() {
                     {item.emoji}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="font-display text-base font-semibold text-fg">{item.name}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-display text-base font-semibold text-fg">{item.name}</p>
+                      <span
+                        className={cn(
+                          "rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+                          RARITY_CLASS[item.rarity],
+                        )}
+                      >
+                        {RARITY_LABEL[item.rarity]}
+                      </span>
+                    </div>
                     <p className="text-sm text-muted">{item.blurb}</p>
                     <p
                       className={cn(
@@ -330,7 +429,11 @@ export function AvatarCustomizer() {
                             : "text-muted",
                       )}
                     >
-                      {owned ? "✓ Ya lo tienes" : `${item.cost} XP`}
+                      {owned
+                        ? equipped
+                          ? "✓ Tuyo y equipado"
+                          : "✓ Ya lo tienes"
+                        : `${item.cost} XP`}
                       {!owned && !canAfford && (
                         <span className="ml-1 font-normal text-muted">
                           · te faltan {item.cost - xp}
@@ -338,24 +441,44 @@ export function AvatarCustomizer() {
                       )}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    disabled={owned || !canAfford}
-                    onClick={() => {
-                      const msg = buyShopItem(item.id);
-                      setShopMsg(msg);
-                    }}
-                    className={cn(
-                      "min-h-12 shrink-0 rounded-xl px-4 text-sm font-bold sm:min-w-[7.5rem]",
-                      owned
-                        ? "border border-success/40 bg-success/15 text-success"
-                        : canAfford
-                          ? "bg-primary text-primary-fg"
-                          : "cursor-not-allowed bg-surface-2 text-muted opacity-70",
+                  <div className="flex shrink-0 flex-col gap-2 sm:min-w-[7.5rem]">
+                    {!owned && (
+                      <button
+                        type="button"
+                        disabled={!canAfford}
+                        onClick={() => {
+                          const msg = buyShopItem(item.id);
+                          setShopMsg(msg);
+                        }}
+                        className={cn(
+                          "min-h-12 rounded-xl px-4 text-sm font-bold",
+                          canAfford
+                            ? "bg-primary text-primary-fg"
+                            : "cursor-not-allowed bg-surface-2 text-muted opacity-70",
+                        )}
+                      >
+                        {canAfford ? "Comprar y equipar" : "Sin XP"}
+                      </button>
                     )}
-                  >
-                    {owned ? "Tuyo" : canAfford ? "Comprar" : "Sin XP"}
-                  </button>
+                    {owned && !equipped && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setAvatar({
+                            [item.slot]: item.optionId,
+                          } as Partial<AvatarConfig>)
+                        }
+                        className="min-h-12 rounded-xl border border-primary/40 bg-primary/15 px-4 text-sm font-bold text-fg"
+                      >
+                        Equipar
+                      </button>
+                    )}
+                    {owned && equipped && (
+                      <span className="inline-flex min-h-12 items-center justify-center rounded-xl border border-success/40 bg-success/15 px-4 text-sm font-bold text-success">
+                        Equipado
+                      </span>
+                    )}
+                  </div>
                 </li>
               );
             })}

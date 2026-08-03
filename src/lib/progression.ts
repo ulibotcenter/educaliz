@@ -53,7 +53,7 @@ export function xpProgress(xp: number): {
 /* ─── Avatar ─────────────────────────────────────────────── */
 
 export type AvatarConfig = {
-  skin: "fair" | "warm" | "deep" | "rose";
+  skin: "fair" | "warm" | "deep" | "rose" | "peach" | "olive";
   hat:
     | "none"
     | "star"
@@ -62,7 +62,11 @@ export type AvatarConfig = {
     | "beret"
     | "flower"
     | "crystal"
-    | "phoenix";
+    | "moon"
+    | "leaf"
+    | "comet"
+    | "phoenix"
+    | "nebula";
   cape:
     | "violet"
     | "teal"
@@ -70,8 +74,11 @@ export type AvatarConfig = {
     | "gold"
     | "midnight"
     | "emerald"
+    | "coral"
+    | "ice"
     | "silver"
-    | "aurora";
+    | "aurora"
+    | "starlight";
   wand:
     | "violet"
     | "gold"
@@ -79,18 +86,34 @@ export type AvatarConfig = {
     | "pink"
     | "emerald"
     | "starlight"
+    | "crystal"
+    | "moon"
     | "shadow"
-    | "rainbow";
+    | "rainbow"
+    | "comet";
   familiar:
     | "owl"
     | "fox"
     | "cat"
-    | "dragon"
     | "bunny"
     | "spark"
+    | "wolf"
+    | "raven"
+    | "otter"
+    | "dragon"
     | "phoenix"
     | "unicorn";
-  accessory: "none" | "glasses" | "scarf" | "amulet" | "wings" | "badge";
+  accessory:
+    | "none"
+    | "glasses"
+    | "scarf"
+    | "bow"
+    | "earrings"
+    | "amulet"
+    | "badge"
+    | "wings"
+    | "halo"
+    | "belt";
 };
 
 export const DEFAULT_AVATAR: AvatarConfig = {
@@ -102,107 +125,169 @@ export const DEFAULT_AVATAR: AvatarConfig = {
   accessory: "none",
 };
 
+type OptBase = {
+  label: string;
+  emoji: string;
+  minLevel?: number;
+  requireBadge?: string;
+  shopId?: string;
+  /** short tag shown on the card */
+  tag?: string;
+};
+
 export const AVATAR_OPTIONS = {
   skin: [
-    { id: "fair" as const, label: "Tono claro", emoji: "👧", minLevel: 1 },
-    { id: "warm" as const, label: "Tono cálido", emoji: "👧🏻", minLevel: 1 },
-    { id: "deep" as const, label: "Tono moreno", emoji: "👩🏽", minLevel: 1 },
-    { id: "rose" as const, label: "Tono rosado", emoji: "👩🏻", minLevel: 2 },
+    { id: "fair" as const, label: "Claro", emoji: "👧", minLevel: 1, tag: "base" },
+    { id: "warm" as const, label: "Cálido", emoji: "👧🏻", minLevel: 1, tag: "base" },
+    { id: "deep" as const, label: "Moreno", emoji: "👩🏽", minLevel: 1, tag: "base" },
+    { id: "rose" as const, label: "Rosado", emoji: "👩🏻", minLevel: 2 },
+    { id: "peach" as const, label: "Melocotón", emoji: "👧🏻", minLevel: 3 },
+    { id: "olive" as const, label: "Oliva", emoji: "👩🏽‍🦱", minLevel: 4 },
   ],
   hat: [
-    { id: "none" as const, label: "Sin sombrero", emoji: "·", minLevel: 1 },
-    { id: "star" as const, label: "Diadema de estrella", emoji: "⭐", minLevel: 1 },
+    { id: "none" as const, label: "Sin sombrero", emoji: "·", minLevel: 1, tag: "base" },
+    { id: "star" as const, label: "Diadema estrella", emoji: "⭐", minLevel: 1, tag: "base" },
     { id: "beret" as const, label: "Boina mágica", emoji: "🎩", minLevel: 2 },
     { id: "flower" as const, label: "Corona de flores", emoji: "🌸", minLevel: 3 },
+    { id: "leaf" as const, label: "Corona de hojas", emoji: "🍃", minLevel: 3 },
     { id: "wizard" as const, label: "Sombrero de maga", emoji: "🧙", minLevel: 4 },
+    { id: "moon" as const, label: "Diadema lunar", emoji: "🌙", minLevel: 5 },
     { id: "crystal" as const, label: "Tiara de cristal", emoji: "💎", minLevel: 6 },
     { id: "crown" as const, label: "Corona arcana", emoji: "👑", minLevel: 7 },
+    { id: "comet" as const, label: "Diadema cometa", emoji: "☄️", minLevel: 8 },
     {
       id: "phoenix" as const,
       label: "Cresta Fénix",
       emoji: "🔥",
       shopId: "shop-hat-phoenix",
+      tag: "tienda",
+    },
+    {
+      id: "nebula" as const,
+      label: "Corona nebulosa",
+      emoji: "🌌",
+      shopId: "shop-hat-nebula",
+      tag: "tienda",
     },
   ],
   cape: [
-    { id: "violet" as const, label: "Capa violeta", emoji: "💜", minLevel: 1 },
-    { id: "teal" as const, label: "Capa turquesa", emoji: "🩵", minLevel: 1 },
-    { id: "rose" as const, label: "Capa rosa", emoji: "💗", minLevel: 3 },
+    { id: "violet" as const, label: "Capa violeta", emoji: "💜", minLevel: 1, tag: "base" },
+    { id: "teal" as const, label: "Capa turquesa", emoji: "🩵", minLevel: 1, tag: "base" },
+    { id: "rose" as const, label: "Capa rosa", emoji: "💗", minLevel: 2 },
+    { id: "coral" as const, label: "Capa coral", emoji: "🧡", minLevel: 3 },
     { id: "midnight" as const, label: "Capa medianoche", emoji: "🌙", minLevel: 4 },
     { id: "emerald" as const, label: "Capa esmeralda", emoji: "💚", minLevel: 5 },
+    { id: "ice" as const, label: "Capa de hielo", emoji: "❄️", minLevel: 6 },
     { id: "gold" as const, label: "Capa dorada", emoji: "💛", minLevel: 7 },
     {
       id: "silver" as const,
       label: "Capa de plata",
       emoji: "🤍",
       shopId: "shop-cape-silver",
+      tag: "tienda",
     },
     {
       id: "aurora" as const,
       label: "Capa aurora",
       emoji: "🌈",
       shopId: "shop-cape-aurora",
+      tag: "tienda",
+    },
+    {
+      id: "starlight" as const,
+      label: "Capa estelar",
+      emoji: "✨",
+      shopId: "shop-cape-starlight",
+      tag: "tienda",
     },
   ],
   wand: [
-    { id: "violet" as const, label: "Varita violeta", emoji: "🪄", minLevel: 1 },
-    { id: "gold" as const, label: "Varita dorada", emoji: "✨", minLevel: 1 },
-    { id: "cyan" as const, label: "Varita cian", emoji: "💧", minLevel: 3 },
-    { id: "pink" as const, label: "Varita rosa", emoji: "🌸", minLevel: 4 },
-    { id: "emerald" as const, label: "Varita esmeralda", emoji: "🌿", minLevel: 5 },
-    { id: "starlight" as const, label: "Varita estelar", emoji: "🌟", minLevel: 6 },
+    { id: "violet" as const, label: "Varita violeta", emoji: "🪄", minLevel: 1, tag: "base" },
+    { id: "gold" as const, label: "Varita dorada", emoji: "✨", minLevel: 1, tag: "base" },
+    { id: "cyan" as const, label: "Varita cian", emoji: "💧", minLevel: 2 },
+    { id: "pink" as const, label: "Varita rosa", emoji: "🌸", minLevel: 3 },
+    { id: "emerald" as const, label: "Varita esmeralda", emoji: "🌿", minLevel: 4 },
+    { id: "crystal" as const, label: "Varita de cristal", emoji: "💠", minLevel: 5 },
+    { id: "moon" as const, label: "Varita lunar", emoji: "🌕", minLevel: 6 },
+    { id: "starlight" as const, label: "Varita estelar", emoji: "🌟", minLevel: 7 },
     {
       id: "shadow" as const,
       label: "Varita de sombra",
       emoji: "🌑",
       requireBadge: "boss-math",
+      tag: "jefes",
     },
     {
       id: "rainbow" as const,
       label: "Varita arcoíris",
       emoji: "🌈",
       shopId: "shop-wand-rainbow",
+      tag: "tienda",
+    },
+    {
+      id: "comet" as const,
+      label: "Varita cometa",
+      emoji: "☄️",
+      shopId: "shop-wand-comet",
+      tag: "tienda",
     },
   ],
   familiar: [
-    { id: "owl" as const, label: "Búho", emoji: "🦉", minLevel: 1 },
-    { id: "fox" as const, label: "Zorro", emoji: "🦊", minLevel: 1 },
+    { id: "owl" as const, label: "Búho sabio", emoji: "🦉", minLevel: 1, tag: "base" },
+    { id: "fox" as const, label: "Zorro listo", emoji: "🦊", minLevel: 1, tag: "base" },
     { id: "bunny" as const, label: "Conejo lunar", emoji: "🐰", minLevel: 2 },
     { id: "cat" as const, label: "Gato mágico", emoji: "🐱", minLevel: 3 },
+    { id: "otter" as const, label: "Nutria del río", emoji: "🦦", minLevel: 3 },
     { id: "spark" as const, label: "Chispa viva", emoji: "✨", minLevel: 4 },
-    { id: "dragon" as const, label: "Dragón bebé", emoji: "🐉", minLevel: 6 },
+    { id: "raven" as const, label: "Cuervo de runas", emoji: "🐦‍⬛", minLevel: 5 },
+    { id: "wolf" as const, label: "Lobo de niebla", emoji: "🐺", minLevel: 6 },
+    { id: "dragon" as const, label: "Dragón bebé", emoji: "🐉", minLevel: 7 },
     {
       id: "phoenix" as const,
       label: "Fénix bebé",
       emoji: "🐦",
       requireBadge: "level-5",
+      tag: "logro",
     },
     {
       id: "unicorn" as const,
       label: "Unicornio",
       emoji: "🦄",
       shopId: "shop-familiar-unicorn",
+      tag: "tienda",
     },
   ],
   accessory: [
-    { id: "none" as const, label: "Sin accesorio", emoji: "·", minLevel: 1 },
+    { id: "none" as const, label: "Sin accesorio", emoji: "·", minLevel: 1, tag: "base" },
     { id: "glasses" as const, label: "Gafas de runas", emoji: "👓", minLevel: 2 },
+    { id: "bow" as const, label: "Lazo de seda", emoji: "🎀", minLevel: 2 },
     { id: "scarf" as const, label: "Bufanda de hebras", emoji: "🧣", minLevel: 3 },
+    { id: "earrings" as const, label: "Pendientes de luna", emoji: "🌙", minLevel: 4 },
     { id: "amulet" as const, label: "Amuleto de luna", emoji: "🔮", minLevel: 5 },
+    { id: "belt" as const, label: "Cinto de magia", emoji: "⚡", minLevel: 6 },
     {
       id: "badge" as const,
       label: "Broche de la Academia",
       emoji: "🏅",
       requireBadge: "perfect-mission",
+      tag: "logro",
     },
     {
       id: "wings" as const,
       label: "Alas de luz",
       emoji: "🪽",
       shopId: "shop-acc-wings",
+      tag: "tienda",
+    },
+    {
+      id: "halo" as const,
+      label: "Halo de estrellas",
+      emoji: "💫",
+      shopId: "shop-acc-halo",
+      tag: "tienda",
     },
   ],
-} as const;
+} as const satisfies Record<keyof AvatarConfig, readonly ({ id: string } & OptBase)[]>;
 
 export type XpShopItem = {
   id: string;
@@ -212,6 +297,7 @@ export type XpShopItem = {
   cost: number;
   slot: keyof typeof AVATAR_OPTIONS;
   optionId: string;
+  rarity: "rara" | "épica" | "legendaria";
 };
 
 export const XP_SHOP: XpShopItem[] = [
@@ -223,6 +309,7 @@ export const XP_SHOP: XpShopItem[] = [
     cost: 40,
     slot: "cape",
     optionId: "aurora",
+    rarity: "rara",
   },
   {
     id: "shop-cape-silver",
@@ -232,6 +319,17 @@ export const XP_SHOP: XpShopItem[] = [
     cost: 55,
     slot: "cape",
     optionId: "silver",
+    rarity: "rara",
+  },
+  {
+    id: "shop-cape-starlight",
+    name: "Capa Estelar",
+    blurb: "Cosida con polvo de estrellas",
+    emoji: "✨",
+    cost: 65,
+    slot: "cape",
+    optionId: "starlight",
+    rarity: "épica",
   },
   {
     id: "shop-wand-rainbow",
@@ -241,6 +339,7 @@ export const XP_SHOP: XpShopItem[] = [
     cost: 70,
     slot: "wand",
     optionId: "rainbow",
+    rarity: "épica",
   },
   {
     id: "shop-hat-phoenix",
@@ -250,6 +349,17 @@ export const XP_SHOP: XpShopItem[] = [
     cost: 80,
     slot: "hat",
     optionId: "phoenix",
+    rarity: "épica",
+  },
+  {
+    id: "shop-wand-comet",
+    name: "Varita Cometa",
+    blurb: "Deja una estela brillante al girar",
+    emoji: "☄️",
+    cost: 85,
+    slot: "wand",
+    optionId: "comet",
+    rarity: "épica",
   },
   {
     id: "shop-acc-wings",
@@ -259,6 +369,27 @@ export const XP_SHOP: XpShopItem[] = [
     cost: 90,
     slot: "accessory",
     optionId: "wings",
+    rarity: "épica",
+  },
+  {
+    id: "shop-hat-nebula",
+    name: "Corona Nebulosa",
+    blurb: "Galaxias diminutas en la frente",
+    emoji: "🌌",
+    cost: 95,
+    slot: "hat",
+    optionId: "nebula",
+    rarity: "legendaria",
+  },
+  {
+    id: "shop-acc-halo",
+    name: "Halo de Estrellas",
+    blurb: "Un círculo de luz que te sigue",
+    emoji: "💫",
+    cost: 100,
+    slot: "accessory",
+    optionId: "halo",
+    rarity: "legendaria",
   },
   {
     id: "shop-familiar-unicorn",
@@ -268,17 +399,37 @@ export const XP_SHOP: XpShopItem[] = [
     cost: 110,
     slot: "familiar",
     optionId: "unicorn",
+    rarity: "legendaria",
   },
 ];
 
+function idsOf<T extends { id: string }>(opts: readonly T[]): Set<string> {
+  return new Set(opts.map((o) => o.id));
+}
+
+const VALID_SKIN = idsOf(AVATAR_OPTIONS.skin);
+const VALID_HAT = idsOf(AVATAR_OPTIONS.hat);
+const VALID_CAPE = idsOf(AVATAR_OPTIONS.cape);
+const VALID_WAND = idsOf(AVATAR_OPTIONS.wand);
+const VALID_FAM = idsOf(AVATAR_OPTIONS.familiar);
+const VALID_ACC = idsOf(AVATAR_OPTIONS.accessory);
+
 export function normalizeAvatar(raw: Partial<AvatarConfig> | null | undefined): AvatarConfig {
+  const pick = <K extends keyof AvatarConfig>(
+    key: K,
+    valid: Set<string>,
+    fallback: AvatarConfig[K],
+  ): AvatarConfig[K] => {
+    const v = raw?.[key];
+    return v && valid.has(v as string) ? (v as AvatarConfig[K]) : fallback;
+  };
   return {
-    skin: raw?.skin ?? DEFAULT_AVATAR.skin,
-    hat: raw?.hat ?? DEFAULT_AVATAR.hat,
-    cape: raw?.cape ?? DEFAULT_AVATAR.cape,
-    wand: raw?.wand ?? DEFAULT_AVATAR.wand,
-    familiar: raw?.familiar ?? DEFAULT_AVATAR.familiar,
-    accessory: raw?.accessory ?? DEFAULT_AVATAR.accessory,
+    skin: pick("skin", VALID_SKIN, DEFAULT_AVATAR.skin),
+    hat: pick("hat", VALID_HAT, DEFAULT_AVATAR.hat),
+    cape: pick("cape", VALID_CAPE, DEFAULT_AVATAR.cape),
+    wand: pick("wand", VALID_WAND, DEFAULT_AVATAR.wand),
+    familiar: pick("familiar", VALID_FAM, DEFAULT_AVATAR.familiar),
+    accessory: pick("accessory", VALID_ACC, DEFAULT_AVATAR.accessory),
   };
 }
 
@@ -287,7 +438,7 @@ export function isAvatarOptionUnlocked(
   ctx: { level: number; badges: string[]; ownedShop: string[] },
 ): { ok: boolean; reason?: string } {
   if (opt.shopId && !ctx.ownedShop.includes(opt.shopId)) {
-    return { ok: false, reason: "Tienda de XP" };
+    return { ok: false, reason: "Solo en la tienda" };
   }
   if (opt.requireBadge && !ctx.badges.includes(opt.requireBadge)) {
     return { ok: false, reason: "Insignia especial" };
@@ -387,99 +538,118 @@ export const STORY_CHAPTERS: StoryChapter[] = [
   },
 ];
 
+/** Permanent badges — magical names, same unlock ids (game logic untouched) */
 export const ALL_BADGES: Record<
   string,
-  { name: string; desc: string; emoji: string }
+  { name: string; desc: string; emoji: string; glow: "gold" | "violet" | "teal" | "rose" }
 > = {
   "racha-3": {
-    name: "Racha de 3 días",
-    desc: "Jugaste 3 días seguidos",
+    name: "Llama de Tres Soles",
+    desc: "¡3 días seguidos de magia!",
     emoji: "🔥",
+    glow: "rose",
   },
   "racha-7": {
-    name: "Racha de 7 días",
-    desc: "¡Una semana de magia diaria!",
+    name: "Corona de Siete Estrellas",
+    desc: "Una semana entera de práctica",
     emoji: "🌟",
+    glow: "gold",
   },
   "cien-puntos": {
-    name: "Cien estrellas",
-    desc: "Alcanzaste 100 puntos",
+    name: "Lluvia de Estrellas",
+    desc: "100 puntos brillando en tu grimorio",
     emoji: "✨",
+    glow: "gold",
   },
   quinientos: {
-    name: "Maestra Arcana",
-    desc: "500 puntos de magia",
+    name: "Trono Arcano",
+    desc: "500 puntos de pura magia",
     emoji: "👑",
+    glow: "gold",
   },
   "math-5": {
-    name: "Aprendiz de números",
-    desc: "5 misiones de mates",
+    name: "Semilla de Números",
+    desc: "5 partidas en la Torre de Mates",
     emoji: "🔢",
+    glow: "teal",
   },
   "math-15": {
-    name: "Hechicera del cálculo",
-    desc: "15 misiones de mates",
+    name: "Hechicera del Cálculo",
+    desc: "15 partidas de matemáticas",
     emoji: "🪄",
+    glow: "violet",
   },
   "math-all": {
-    name: "Guardiana de los Números",
-    desc: "¡Las 30 misiones de la Torre!",
+    name: "Guardiana de la Torre",
+    desc: "¡30 partidas en la Torre de Números!",
     emoji: "🏰",
+    glow: "gold",
   },
   "lang-5": {
-    name: "Exploradora de palabras",
-    desc: "5 oraciones analizadas",
+    name: "Exploradora de Palabras",
+    desc: "5 partidas de lengua",
     emoji: "📖",
+    glow: "teal",
   },
   "lang-all": {
     name: "Maestra de las Oraciones",
-    desc: "15 oraciones completas",
+    desc: "Muchas partidas de lengua completadas",
     emoji: "📜",
+    glow: "violet",
   },
   "eng-half": {
-    name: "Exploradora del Inglés",
-    desc: "6 retos de inglés",
+    name: "Brújula del Inglés",
+    desc: "Varias partidas de English",
     emoji: "🧭",
+    glow: "teal",
   },
   "eng-all": {
-    name: "Bilingual Mage",
-    desc: "12 retos de inglés",
+    name: "Maga Bilingüe",
+    desc: "Muchas partidas de inglés",
     emoji: "🇬🇧",
+    glow: "violet",
   },
   lectora: {
-    name: "Lectora de dos mundos",
-    desc: "2 fichas de lectura",
+    name: "Lectora de Dos Mundos",
+    desc: "Completaste las 2 fichas de lectura",
     emoji: "📚",
+    glow: "rose",
   },
   "boss-math": {
-    name: "Vencedora del Guardián",
-    desc: "Ganaste la Prueba del Guardián de Números",
+    name: "Llave del Guardián",
+    desc: "Venciste al Guardián de los Números",
     emoji: "⚔️",
+    glow: "gold",
   },
   "boss-lang": {
-    name: "Vencedora de la Biblioteca",
-    desc: "Ganaste la Prueba de la Bibliotecaria",
+    name: "Sello de la Biblioteca",
+    desc: "Venciste a la Bibliotecaria Misteriosa",
     emoji: "🦉",
+    glow: "violet",
   },
   "boss-eng": {
-    name: "Sphinx Friend",
-    desc: "Beat the English Sphinx trial",
+    name: "Amiga de la Esfinge",
+    desc: "Superaste la prueba de la English Sphinx",
     emoji: "🦁",
+    glow: "teal",
   },
   "perfect-mission": {
-    name: "Primera misión perfecta",
-    desc: "Completaste una misión sin fallar",
+    name: "Diamante Sin Fallos",
+    desc: "Una partida perfecta (¡ni un error!)",
     emoji: "💎",
+    glow: "gold",
   },
   "level-5": {
-    name: "Tejedora de hechizos",
-    desc: "Alcanzaste el nivel 5",
+    name: "Tejedora de Hechizos",
+    desc: "Alcanzaste el nivel 5 de maga",
     emoji: "🧵",
+    glow: "violet",
   },
   "level-10": {
-    name: "Leyenda de verano",
-    desc: "Alcanzaste el nivel 10",
+    name: "Leyenda del Verano",
+    desc: "Alcanzaste el nivel 10 — ¡eres leyenda!",
     emoji: "🌙",
+    glow: "gold",
   },
 };
 

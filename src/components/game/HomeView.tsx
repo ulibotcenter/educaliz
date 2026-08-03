@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  Check,
   Flame,
   Languages,
   Map as MapIcon,
@@ -47,6 +48,8 @@ export function HomeView() {
       key: "math" as const,
       done: dp.math,
       label: "Mates",
+      emoji: "🔢",
+      step: 1,
       start: () => {
         setPlayMode("official");
         startLevel("math", dailyLevel);
@@ -56,6 +59,8 @@ export function HomeView() {
       key: "language" as const,
       done: dp.language,
       label: "Lengua",
+      emoji: "📖",
+      step: 2,
       start: () => {
         setPlayMode("official");
         startLevel("language", dailyLevel);
@@ -65,6 +70,8 @@ export function HomeView() {
       key: "english" as const,
       done: dp.english,
       label: "English",
+      emoji: "🇬🇧",
+      step: 3,
       start: () => {
         setPlayMode("official");
         startLevel("english", dailyLevel);
@@ -79,7 +86,7 @@ export function HomeView() {
     {
       id: "math" as const,
       title: "Torre de Números",
-      subtitle: "5 niveles · baúl aleatorio + guardián",
+      subtitle: "Elige nivel · 5 retos al azar",
       icon: Wand2,
       accent: "text-primary bg-primary/15",
       progress: `${mathCompleted.length} partidas`,
@@ -95,7 +102,7 @@ export function HomeView() {
     {
       id: "english" as const,
       title: "Cámara del Inglés",
-      subtitle: "Levels + Sphinx trial",
+      subtitle: "Levels + prueba final",
       icon: Languages,
       accent: "text-accent-2 bg-accent-2/15",
       progress: `${englishCompleted.length} partidas`,
@@ -119,10 +126,11 @@ export function HomeView() {
   ];
 
   return (
-    <div className="animate-fade-in space-y-6">
-      <section className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 card-glow sm:p-6">
-        <div className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-accent/20 blur-3xl" />
-        <div className="relative flex items-start gap-4">
+    <div className="animate-fade-in space-y-5 sm:space-y-6">
+      {/* Compact greeting */}
+      <section className="relative overflow-hidden rounded-2xl border border-border bg-card p-4 card-glow sm:p-5">
+        <div className="pointer-events-none absolute -right-8 -top-8 h-36 w-36 rounded-full bg-accent/20 blur-3xl" />
+        <div className="relative flex items-center gap-3 sm:gap-4">
           <button
             type="button"
             onClick={() => setView("avatar")}
@@ -131,81 +139,94 @@ export function HomeView() {
           >
             <AvatarPortrait size="md" />
           </button>
-          <div className="min-w-0 flex-1 space-y-1.5">
-            <p className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-muted">
+          <div className="min-w-0 flex-1 space-y-0.5">
+            <p className="inline-flex items-center gap-1 text-xs font-medium text-muted">
               <MapIcon className="h-3.5 w-3.5" aria-hidden />
-              Academia Arcana · Verano
+              Academia Arcana
             </p>
-            <h1 className="font-display text-2xl font-semibold tracking-tight text-fg text-balance sm:text-3xl">
+            <h1 className="font-display text-xl font-semibold tracking-tight text-fg sm:text-2xl">
               ¡Hola, {name}!
             </h1>
             <p className="text-sm text-muted">
               Nivel {prog.level} · {prog.title}
             </p>
-            <label className="flex max-w-[12rem] flex-col gap-1 pt-1 text-xs text-muted">
-              Tu nombre de maga
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="min-h-11 rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none ring-primary focus:ring-2"
-                maxLength={20}
-              />
-            </label>
           </div>
         </div>
       </section>
 
-      <section className="rounded-2xl border border-border bg-card p-4">
-        <ThemeToggle />
-        <p className="mt-2 text-xs text-muted">
-          Elige tu look mágico. Se guarda solo y no se olvida al volver.
-        </p>
-      </section>
-
-      <section className="relative overflow-hidden rounded-2xl border-2 border-danger/50 bg-gradient-to-br from-danger/20 via-card to-primary/10 p-5 shadow-lg sm:p-6">
-        <div className="pointer-events-none absolute -right-6 top-0 text-7xl opacity-15" aria-hidden>
+      {/* Misión de hoy — hero, first real action */}
+      <section className="relative overflow-hidden rounded-2xl border-[3px] border-danger/55 bg-gradient-to-br from-danger/25 via-card to-primary/15 p-5 shadow-[0_0_36px_color-mix(in_oklab,var(--color-danger)_18%,transparent)] sm:p-6">
+        <div className="pointer-events-none absolute -right-4 top-2 text-8xl opacity-10" aria-hidden>
           🔥
         </div>
         <div className="relative space-y-4">
-          <div className="flex items-center gap-2">
-            <span className="grid h-11 w-11 place-items-center rounded-xl bg-danger/25 text-danger">
-              <Flame className="h-6 w-6" aria-hidden />
+          <div className="flex items-center gap-3">
+            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-danger/30 text-danger">
+              <Flame className="h-7 w-7" aria-hidden />
             </span>
             <div>
               <p className="text-xs font-bold uppercase tracking-wide text-danger">
-                Lo más importante hoy
+                Empieza aquí · lo más fácil
               </p>
               <h2 className="font-display text-xl font-semibold text-fg sm:text-2xl">
                 Misión de hoy · {levelName}
               </h2>
             </div>
           </div>
-          <p className="text-base text-muted">
+
+          <p className="text-base leading-snug text-muted sm:text-lg">
             {dailyDone === 3
-              ? "¡Ritual completo! Puedes repasar o explorar el mapa."
-              : "3 partes cortas · mates + lengua + un poco de inglés. ¡1 toque para seguir!"}
+              ? "¡Ritual completo! Ya hiciste las 3 partes. Puedes repasar o explorar el mapa."
+              : "Solo 3 partes cortas: mates → lengua → inglés. Un toque y empiezas."}
           </p>
-          <div className="flex gap-2">
+
+          {/* Step chips */}
+          <ol className="grid grid-cols-3 gap-2">
             {dailyParts.map((p) => (
-              <div
+              <li
                 key={p.key}
                 className={cn(
-                  "h-3 flex-1 rounded-full",
-                  p.done ? "bg-success" : "bg-surface-2",
+                  "flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-center",
+                  p.done
+                    ? "border-success/45 bg-success/15"
+                    : nextPart?.key === p.key
+                      ? "border-primary/50 bg-primary/15 ring-1 ring-primary/30"
+                      : "border-border bg-surface/60",
                 )}
-                title={p.label}
-              />
+              >
+                <span className="text-lg" aria-hidden>
+                  {p.done ? "✅" : p.emoji}
+                </span>
+                <span className="text-[11px] font-bold text-muted">Paso {p.step}</span>
+                <span className="text-xs font-semibold text-fg">{p.label}</span>
+              </li>
             ))}
+          </ol>
+
+          <div className="flex items-center gap-2">
+            <div className="flex h-2.5 flex-1 gap-1.5">
+              {dailyParts.map((p) => (
+                <div
+                  key={p.key}
+                  className={cn(
+                    "h-full flex-1 rounded-full transition-colors",
+                    p.done ? "bg-success" : "bg-surface-2",
+                  )}
+                />
+              ))}
+            </div>
+            <span className="shrink-0 text-sm font-bold tabular-nums text-fg">
+              {dailyDone}/3
+            </span>
           </div>
-          <p className="text-sm font-medium text-fg">{dailyDone}/3 hechas</p>
 
           {dailyDone < 3 && nextPart ? (
             <button
               type="button"
               onClick={nextPart.start}
-              className="flex min-h-16 w-full items-center justify-center gap-2 rounded-2xl bg-primary text-lg font-bold text-primary-fg shadow-md"
+              className="flex min-h-[4.25rem] w-full items-center justify-center gap-2.5 rounded-2xl bg-primary text-lg font-bold text-primary-fg shadow-lg active:scale-[0.99] sm:text-xl"
             >
-              <Play className="h-6 w-6" aria-hidden />
+              <Play className="h-7 w-7" aria-hidden />
               {dailyDone === 0
                 ? "¡Empezar misión de hoy!"
                 : `Continuar: ${nextPart.label}`}
@@ -214,15 +235,17 @@ export function HomeView() {
             <button
               type="button"
               onClick={() => setView("daily")}
-              className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border border-success/40 bg-success/15 text-base font-semibold text-success"
+              className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border border-success/45 bg-success/15 text-base font-bold text-success"
             >
-              Ver ritual completo
+              <Check className="h-5 w-5" aria-hidden />
+              ¡Ritual completo! Ver detalles
             </button>
           )}
+
           <button
             type="button"
             onClick={() => setView("daily")}
-            className="min-h-11 w-full text-sm font-medium text-muted underline-offset-2 hover:text-fg hover:underline"
+            className="min-h-11 w-full text-sm font-semibold text-muted underline-offset-2 hover:text-fg hover:underline"
           >
             Ver las 3 partes del día
           </button>
@@ -262,7 +285,7 @@ export function HomeView() {
           <button
             type="button"
             onClick={() => setView("progress")}
-            className="min-h-10 text-sm font-medium text-primary"
+            className="min-h-10 text-sm font-semibold text-primary"
           >
             Ver todo →
           </button>
@@ -312,7 +335,20 @@ export function HomeView() {
         </div>
       </section>
 
-      <p className="text-center text-sm text-muted">
+      <section className="rounded-2xl border border-border bg-card/80 p-4">
+        <ThemeToggle />
+        <label className="mt-3 flex max-w-xs flex-col gap-1 text-xs text-muted">
+          Tu nombre de maga
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="min-h-11 rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none ring-primary focus:ring-2"
+            maxLength={20}
+          />
+        </label>
+      </section>
+
+      <p className="pb-2 text-center text-sm text-muted">
         Consejo: un poquito cada día = magia que se queda.
       </p>
     </div>

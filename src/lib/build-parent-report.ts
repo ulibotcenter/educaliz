@@ -1,11 +1,8 @@
-import { MATH_TASKS } from "@/lib/data/math-tasks";
-import { LANGUAGE_SENTENCES } from "@/lib/data/language-tasks";
-import { ENGLISH_TASKS } from "@/lib/data/english-tasks";
+import { SESSION_GOALS, SESSION_GOAL_TOTAL } from "@/lib/progress-goals";
 import { ALL_BADGES, xpProgress } from "@/lib/progression";
 import {
   analyzeSkills,
   parentRecommendations,
-  skillLabel,
 } from "@/lib/skill-insights";
 import type { ProgressReportData } from "@/lib/report-pdf";
 import { downloadProgressReportPdf } from "@/lib/report-pdf";
@@ -40,8 +37,7 @@ export function buildReportFromState(s: ReportSource): ProgressReportData {
   const readDone = s.books.filter((b) => b.completed).length;
 
   const missionsCompleted = mathDone + langDone + engDone + readDone;
-  const missionsTotal =
-    MATH_TASKS.length + LANGUAGE_SENTENCES.length + ENGLISH_TASKS.length + 2;
+  const missionsTotal = SESSION_GOAL_TOTAL;
 
   const { strong, weak } = analyzeSkills(s.skillStats);
 
@@ -64,13 +60,13 @@ export function buildReportFromState(s: ReportSource): ProgressReportData {
     studentName: s.playerName,
     period: "Verano 2026",
     mathDone,
-    mathTotal: MATH_TASKS.length,
+    mathTotal: SESSION_GOALS.math,
     languageDone: langDone,
-    languageTotal: LANGUAGE_SENTENCES.length,
+    languageTotal: SESSION_GOALS.language,
     englishDone: engDone,
-    englishTotal: ENGLISH_TASKS.length,
+    englishTotal: SESSION_GOALS.english,
     readingDone: readDone,
-    readingTotal: 2,
+    readingTotal: SESSION_GOALS.reading,
     missionsCompleted,
     missionsTotal,
     accuracyPercent: accuracy,

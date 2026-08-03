@@ -50,7 +50,7 @@ export function BossGate({
             ? "¡Prueba superada! Puedes repetir por diversión."
             : open
               ? "5 preguntas finales · recompensa especial"
-              : `Desbloquea con ${need} misiones oficiales (${completed}/${need})`}
+              : `Desbloquea con ${need} partidas oficiales (${completed}/${need})`}
         </span>
       </span>
     </button>

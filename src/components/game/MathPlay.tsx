@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { LEVEL_META, MATH_BANK, type MathQ } from "@/lib/data/question-banks";
 import { TYPE_LABELS, type MathExerciseType } from "@/lib/data/math-tasks";
-import { enrichMathExplanation } from "@/lib/explain";
+import { correctCheer, enrichMathExplanation } from "@/lib/explain";
 import { useGameStore } from "@/lib/game-store";
 import { playCorrect, playWrong } from "@/lib/sounds";
 import { cn, normalizeNumberInput } from "@/lib/utils";
@@ -66,6 +66,7 @@ export function MathPlay() {
   const [wrongCount, setWrongCount] = useState(0);
   const [failTags, setFailTags] = useState<string[]>([]);
   const [showSummary, setShowSummary] = useState(false);
+  const [streakOk, setStreakOk] = useState(0);
 
   if (showSummary) {
     return (
@@ -119,6 +120,7 @@ export function MathPlay() {
       setFeedback("bad");
       setEarnedPts(0);
       playWrong();
+      setStreakOk(0);
       setWrongCount((c) => c + 1);
       setFailTags((t) => [...t, ex.type]);
       recordSkill(ex.type, "bad");
@@ -131,6 +133,7 @@ export function MathPlay() {
       setEarnedPts(pts);
       setFeedback("ok");
       playCorrect();
+      setStreakOk((s) => s + 1);
       setCorrectCount((c) => c + 1);
       recordSkill(ex.type, "ok");
       awardCorrect(practice ? 0 : basePts);
@@ -139,6 +142,7 @@ export function MathPlay() {
       setEarnedPts(0);
       playWrong();
       awardWrong();
+      setStreakOk(0);
       setWrongCount((c) => c + 1);
       setFailTags((t) => [...t, ex.type]);
       recordSkill(ex.type, "bad");
@@ -206,7 +210,7 @@ export function MathPlay() {
         >
           {TYPE_LABELS[ex.type as MathExerciseType] ?? ex.type}
         </span>
-        <p className="whitespace-pre-line font-display text-xl font-semibold leading-relaxed text-fg sm:text-2xl">
+        <p className="whitespace-pre-line font-display text-[1.35rem] font-semibold leading-snug text-fg sm:text-2xl">
           {ex.prompt}
         </p>
 
@@ -217,7 +221,7 @@ export function MathPlay() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !answered && submit()}
-            className="min-h-14 w-full rounded-xl border border-border bg-surface px-4 text-xl tabular-nums text-fg outline-none ring-primary focus:ring-2"
+            className="min-h-16 w-full rounded-xl border border-border bg-surface px-4 text-2xl tabular-nums text-fg outline-none ring-primary focus:ring-2"
             placeholder="Escribe aquí…"
             disabled={answered}
           />
@@ -226,7 +230,7 @@ export function MathPlay() {
         {feedback === "ok" && (
           <AnswerFeedback
             kind="ok"
-            title="¡Correcto! ¡Eres una maga del cálculo!"
+            title={correctCheer(streakOk, "math")}
             points={earnedPts}
             practice={practice}
           />

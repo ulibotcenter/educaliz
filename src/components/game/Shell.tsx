@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 import {
   BookOpen,
   Flame,
@@ -16,7 +16,7 @@ import { AvatarPortrait } from "@/components/game/AvatarView";
 import { StoryModal } from "@/components/game/StoryModal";
 import { ThemeToggle } from "@/components/game/ThemeToggle";
 import { ThemeApplier } from "@/components/game/ThemeApplier";
-import { useEffect } from "react";
+import { CelebrationHost } from "@/components/game/CelebrationHost";
 
 const NAV: { id: ViewId; label: string; icon: typeof Home }[] = [
   { id: "home", label: "Mapa", icon: Home },
@@ -73,6 +73,7 @@ export function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-[calc(100dvh-var(--grok-banner-h,0px))] flex-col">
       <ThemeApplier />
+      <CelebrationHost />
       <header className="sticky top-[var(--grok-banner-h,0px)] z-30 border-b border-border/60 bg-bg/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 px-3 py-2.5 sm:px-4 sm:py-3">
           <button
@@ -108,7 +109,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
       <main
         key={view}
-        className="mx-auto w-full max-w-5xl flex-1 animate-fade-in px-4 py-5 pb-36 sm:py-8 sm:pb-36"
+        className="mx-auto w-full max-w-5xl flex-1 animate-fade-in px-4 py-5 pb-36 sm:px-5 sm:py-8 sm:pb-36"
       >
         {children}
       </main>
@@ -130,16 +131,19 @@ export function Shell({ children }: { children: ReactNode }) {
                 type="button"
                 onClick={() => setView(id)}
                 className={cn(
-                  "flex min-h-14 min-w-[3.25rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-medium transition sm:text-xs",
+                  "flex min-h-[3.75rem] min-w-[3.35rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[11px] font-semibold transition sm:text-xs",
                   active
                     ? isDaily
                       ? "bg-danger/20 text-danger"
                       : "bg-primary/15 text-primary"
                     : "text-muted hover:bg-surface hover:text-fg",
-                  isDaily && !active && "text-danger/80",
+                  isDaily && !active && "text-danger/90",
                 )}
               >
-                <Icon className={cn("h-5 w-5 sm:h-6 sm:w-6", isDaily && "h-6 w-6")} aria-hidden />
+                <Icon
+                  className={cn("h-5 w-5 sm:h-6 sm:w-6", isDaily && "h-6 w-6")}
+                  aria-hidden
+                />
                 <span>{label}</span>
               </button>
             );

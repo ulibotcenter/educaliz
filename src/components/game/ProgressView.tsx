@@ -1,13 +1,13 @@
 import { FileDown, RotateCcw, Sparkles, Trophy, User } from "lucide-react";
-import { BADGE_INFO, useGameStore } from "@/lib/game-store";
+import { useGameStore } from "@/lib/game-store";
 import { ALL_BADGES, xpProgress } from "@/lib/progression";
 import { downloadLiveParentReport } from "@/lib/build-parent-report";
 import { analyzeSkills } from "@/lib/skill-insights";
-import { TEMP_BADGE_LABELS } from "@/lib/roulette-prizes";
 import { AvatarPortrait } from "@/components/game/AvatarView";
 import { ProgressPanel } from "@/components/game/ProgressPanel";
 import { StoryLog } from "@/components/game/StoryModal";
 import { RewardRoulette } from "@/components/game/RewardRoulette";
+import { PermanentBadgeCard, TempBadgeChip } from "@/components/game/BadgeChips";
 
 export function ProgressView() {
   const points = useGameStore((s) => s.points);
@@ -156,7 +156,7 @@ export function ProgressView() {
       </section>
 
       <div className="rounded-xl border border-border bg-surface/50 p-3 text-sm text-muted">
-        Perfectas: {perfectMissions} · Jefes:{" "}
+        Partidas perfectas: {perfectMissions} · Jefes:{" "}
         {[
           bossBeaten.math && "Números",
           bossBeaten.language && "Lengua",
@@ -164,29 +164,31 @@ export function ProgressView() {
         ]
           .filter(Boolean)
           .join(", ") || "ninguno aún"}{" "}
-        · Partidas oficiales: {sessionsTotal} · Tokens (boss):{" "}
-        {mathCompleted.length + languageCompleted.length + englishCompleted.length} · Libros:{" "}
+        · Partidas oficiales: {sessionsTotal} · Libros:{" "}
         {books.filter((b) => b.completed).length}/2
       </div>
 
-      {activeTemp.length > 0 && (
-        <section className="space-y-2">
+      <section className="space-y-3 rounded-2xl border-2 border-dashed border-accent/50 bg-gradient-to-br from-accent/10 via-card to-primary/5 p-4">
+        <div>
           <h2 className="font-display text-lg font-semibold text-fg">Insignias temporales</h2>
+          <p className="text-xs text-muted">
+            Brillan distinto de las permanentes. Duran 24 h (renuevas si entras cada día).
+          </p>
+        </div>
+        {activeTemp.length === 0 ? (
+          <p className="text-sm text-muted">
+            Gira la roleta para ganar Brisa Arcana, Llama Fugaz o Eco de las Estrellas.
+          </p>
+        ) : (
           <ul className="flex flex-wrap gap-2">
-            {activeTemp.map(([id]) => {
-              const info = TEMP_BADGE_LABELS[id];
-              return (
-                <li
-                  key={id}
-                  className="rounded-full border border-dashed border-accent bg-accent/15 px-3 py-1.5 text-sm font-medium text-fg"
-                >
-                  {info?.emoji ?? "⏳"} {info?.name ?? id}
-                </li>
-              );
-            })}
+            {activeTemp.map(([id]) => (
+              <li key={id}>
+                <TempBadgeChip id={id} showBlurb />
+              </li>
+            ))}
           </ul>
-        </section>
-      )}
+        )}
+      </section>
 
       <section className="space-y-3">
         <h2 className="font-display text-lg font-semibold text-fg">Insignias permanentes</h2>
@@ -196,23 +198,9 @@ export function ProgressView() {
           </p>
         ) : (
           <ul className="grid gap-2 sm:grid-cols-2">
-            {badges.map((id) => {
-              const info = BADGE_INFO[id];
-              return (
-                <li
-                  key={id}
-                  className="flex gap-3 rounded-xl border border-primary/30 bg-primary/10 p-3"
-                >
-                  <span className="text-2xl" aria-hidden>
-                    {info?.emoji ?? "🏅"}
-                  </span>
-                  <span>
-                    <p className="font-semibold text-fg">{info?.name ?? id}</p>
-                    <p className="text-xs text-muted">{info?.desc}</p>
-                  </span>
-                </li>
-              );
-            })}
+            {badges.map((id) => (
+              <PermanentBadgeCard key={id} id={id} />
+            ))}
           </ul>
         )}
         {lockedBadges.length > 0 && (

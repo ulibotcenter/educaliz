@@ -1,3 +1,4 @@
+import { correctCheer } from "@/lib/explain";
 import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { ENG_BANK, LEVEL_META, type EngQ } from "@/lib/data/question-banks";
@@ -42,6 +43,7 @@ export function EnglishPlay() {
   const [wrongCount, setWrongCount] = useState(0);
   const [failTags, setFailTags] = useState<string[]>([]);
   const [showSummary, setShowSummary] = useState(false);
+  const [streakOk, setStreakOk] = useState(0);
 
   const q = questions[idx];
 
@@ -95,6 +97,7 @@ export function EnglishPlay() {
       setEarnedPts(pts);
       setFeedback("ok");
       playCorrect();
+      setStreakOk((s) => s + 1);
       awardCorrect(practice ? 0 : 10);
       setCorrectCount((n) => n + 1);
       recordSkill(q.kind, "ok");
@@ -102,6 +105,7 @@ export function EnglishPlay() {
       setFeedback("bad");
       setEarnedPts(0);
       playWrong();
+      setStreakOk(0);
       awardWrong();
       setWrongCount((n) => n + 1);
       setFailTags((t) => [...t, q.kind]);
@@ -142,7 +146,7 @@ export function EnglishPlay() {
 
       <div className="space-y-4 rounded-xl border border-border bg-card p-5 sm:p-6">
         <p className="text-base text-muted">{q.promptEs}</p>
-        <p className="font-display text-xl font-semibold text-fg sm:text-2xl">{q.prompt}</p>
+        <p className="font-display text-[1.35rem] font-semibold leading-snug text-fg sm:text-2xl">{q.prompt}</p>
 
         <div className="space-y-2.5">
           {options.map((opt) => (
@@ -152,7 +156,7 @@ export function EnglishPlay() {
               disabled={answered}
               onClick={() => setChoice(opt)}
               className={cn(
-                "w-full min-h-14 rounded-xl border px-4 text-left text-base font-medium",
+                "w-full min-h-14 rounded-xl border px-4 py-3.5 text-left text-base font-medium sm:text-lg",
                 choice === opt
                   ? "border-accent-2 bg-accent-2/15"
                   : "border-border bg-surface",
@@ -166,7 +170,7 @@ export function EnglishPlay() {
         {feedback === "ok" && (
           <AnswerFeedback
             kind="ok"
-            title="Great! English magic works!"
+            title={correctCheer(streakOk, "english")}
             points={earnedPts}
             practice={practice}
           />

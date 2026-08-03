@@ -180,21 +180,21 @@ export function BossBattle({ zone }: { zone: Zone }) {
     return (
       <div className="space-y-4">
         {victory && (
-          <div className="rounded-xl border border-success/40 bg-success/10 p-4 text-sm text-fg">
-            <p className="font-display text-lg font-semibold text-success">
+          <div className="rounded-2xl border-2 border-success/45 bg-gradient-to-br from-success/15 to-primary/10 p-5 text-fg confetti-burst relative overflow-hidden">
+            <p className="font-display text-2xl font-semibold text-success">
               ¡Victoria, {playerName}!
             </p>
-            <p className="mt-1 text-muted">
-              Has vencido la prueba. Recompensa: insignia especial + 80 XP + 50 puntos + un capítulo
-              de la historia.
+            <p className="mt-2 text-base leading-relaxed text-muted">
+              Has vencido la prueba final. Premio: insignia especial, +80 XP, +50 puntos y un
+              capítulo nuevo en tu grimorio. ¡Eres una gran maga!
             </p>
           </div>
         )}
         {!victory && (
-          <div className="rounded-xl border border-accent/40 bg-accent/10 p-4 text-sm text-fg">
-            <p className="font-display text-lg font-semibold">El guardián te espera otra vez</p>
-            <p className="mt-1 text-muted">
-              Necesitas al menos 3 aciertos de 5. Entrena un poco y vuelve a intentarlo — ¡tú puedes!
+          <div className="rounded-2xl border-2 border-accent/40 bg-accent/10 p-5 text-fg">
+            <p className="font-display text-xl font-semibold">El guardián te espera otra vez</p>
+            <p className="mt-2 text-base leading-relaxed text-muted">
+              Necesitas al menos 3 aciertos de 5. Entrena un poco y vuelve — ¡tú puedes con calma!
             </p>
           </div>
         )}

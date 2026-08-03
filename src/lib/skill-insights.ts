@@ -81,7 +81,7 @@ export function childFriendlyInsights(stats: Record<string, SkillStat>): {
     return {
       hasData: false,
       strongLine:
-        "Tu magia aún se está despertando. ¡Haz unas misiones y verás brillos aquí!",
+        "Tu magia aún se está despertando. ¡Haz unas partidas y verás brillos aquí!",
       weakLine:
         "Cuando practiques un poco más, te diré qué hechizos entrenar en el Modo Entrenamiento.",
     };
@@ -137,7 +137,7 @@ export function parentRecommendations(
 
   if (maxStreak >= 3 || streak >= 3) {
     lines.push(
-      `La constancia es un punto fuerte (racha actual ${streak} dia(s), maxima ${maxStreak}). Seguir con una mision breve al dia ayuda a fijar lo aprendido.`,
+      `La constancia es un punto fuerte (racha actual ${streak} dia(s), maxima ${maxStreak}). Seguir con una partida breve al día ayuda a fijar lo aprendido.`,
     );
   } else {
     lines.push(

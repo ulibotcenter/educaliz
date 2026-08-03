@@ -15,23 +15,27 @@ const TYPE_NAME: Record<MathExerciseType, string> = {
   geometria: "la geometría",
 };
 
-/** Richer math explanation (2–4 sentences, kid-friendly) */
+/**
+ * Prefer the bank's pedagogical explanation when it's already rich.
+ * Only append a short tip if the bank text is still thin.
+ */
 export function enrichMathExplanation(ex: MathExercise): string {
   const base = ex.explanation.trim();
-  if (base.length > 140) return base;
+  if (base.length >= 90) return base;
+
   const tip: Partial<Record<MathExerciseType, string>> = {
-    suma: "Alinea las cifras y suma columna a columna.",
-    resta: "Si no puedes restar, pide prestado a la izquierda.",
-    multiplicacion: "Multiplica por cada cifra y suma los resultados.",
-    division: "Piensa cuántas veces cabe el divisor.",
-    problema: "Subraya datos y pregunta; elige la operación.",
-    calculo_mental: "Busca un truco: redondear o descomponer.",
-    valor_posicional: "De derecha a izquierda: u, d, c, um…",
+    suma: "Alinea las cifras y suma columna a columna, de derecha a izquierda.",
+    resta: "Si la cifra de arriba es menor, pide prestado a la izquierda.",
+    multiplicacion: "Puedes descomponer o usar la tabla: paso a paso.",
+    division: "Piensa cuántas veces cabe el divisor y comprueba multiplicando.",
+    problema: "Subraya datos y pregunta; elige la operación con calma.",
+    calculo_mental: "Busca un truco: redondear, descomponer o usar dobles.",
+    valor_posicional: "De derecha a izquierda: unidades, decenas, centenas…",
     comparacion: "Compara primero las cifras de la izquierda.",
     fraccion: "Divide el total en partes iguales y quédate con las que piden.",
-    decimal: "La coma separa enteros y décimas.",
-    medida: "Recuerda las equivalencias (m, cm, km…).",
-    geometria: "El perímetro es la suma de los lados.",
+    decimal: "Alinea la coma; cada lugar vale 10 veces menos a la derecha.",
+    medida: "Recuerda: 1 m = 100 cm, 1 km = 1000 m, 1 h = 60 min.",
+    geometria: "El perímetro suma lados; el área llena el interior.",
   };
   return `${base} ${tip[ex.type] ?? ""} ¡Con calma lo lograrás!`.trim();
 }
@@ -55,19 +59,41 @@ export function missionMessages(
   if (tier === "great") {
     return {
       title: `¡Brillante, ${name}!`,
-      body: "Tu magia brilla con fuerza. Has acertado casi todo: la Academia Arcana está orgullosa de ti.",
+      body: "¡Qué magia tan limpia! Casi todo correcto. La Academia Arcana aplaude y tu grimorio brilla un poquito más.",
     };
   }
   if (tier === "ok") {
     return {
-      title: `¡Buen camino, ${name}!`,
-      body: "Vas bien. Un poco más de práctica y llegarás a la maestría. ¡Tú puedes!",
+      title: `¡Buen hechizo, ${name}!`,
+      body: "Vas por buen camino. Un poco de práctica y subirás de nivel mágico. ¡Tú puedes con calma y sonrisa!",
     };
   }
   return {
     title: `¡Ánimo, ${name}!`,
-    body: "Errar también enseña. Vuelve al Entrenamiento, repite con calma y verás cómo sube tu poder.",
+    body: "Errar también enseña a las grandes magas. Vuelve al Entrenamiento sin prisa: cada intento te hace más fuerte.",
   };
+}
+
+/** Short titles for correct answers (rotate by streak count) */
+export function correctCheer(streak: number, area: "math" | "language" | "english"): string {
+  if (streak >= 4) {
+    return area === "english"
+      ? "Amazing streak! You're on fire!"
+      : "¡Racha de magia! ¡No paras de brillar!";
+  }
+  if (streak >= 3) {
+    return area === "english"
+      ? "Three in a row — super star!"
+      : "¡Tres seguidos! Eres imparable.";
+  }
+  if (streak >= 2) {
+    return area === "english"
+      ? "Yes! Two in a row!"
+      : "¡Dos seguidos! Qué hechicera.";
+  }
+  if (area === "math") return "¡Correcto! Magia de números.";
+  if (area === "language") return "¡Bien! La biblioteca te sonríe.";
+  return "Great! English magic works!";
 }
 
 export function practiceSuggestion(
@@ -80,40 +106,33 @@ export function practiceSuggestion(
   let n = 0;
   for (const [k, v] of counts) {
     if (v > n) {
-      top = k;
       n = v;
+      top = k;
     }
   }
-  const labels: Record<string, string> = {
-    suma: "las sumas",
-    resta: "las restas",
-    multiplicacion: "las multiplicaciones",
-    division: "las divisiones",
-    problema: "los problemas",
-    calculo_mental: "el cálculo mental",
-    valor_posicional: "el valor posicional",
-    comparacion: "comparar números",
-    fraccion: "las fracciones",
-    decimal: "los decimales",
-    medida: "las medidas",
-    geometria: "la geometría",
-    sujeto: "el sujeto",
-    predicado: "el predicado",
-    nucleos: "los núcleos",
-    morfo: "la morfología",
-    verbo: "el verbo",
-    tipo_oracion: "los tipos de oración",
-    ortografia: "la ortografía",
-    separar: "separar sujeto y predicado",
-    translate: "el vocabulario",
-    choose: "elegir la forma correcta",
-    complete: "completar frases",
-  };
-  const focus = labels[top] ?? top;
-  if (!focus) {
-    return area === "english"
-      ? "Te recomiendo practicar un poco más en el Modo Entrenamiento."
-      : "Te recomiendo practicar más en el Modo Entrenamiento.";
+  if (!top) {
+    return area === "math"
+      ? "Repasa sumas, restas y un problema con calma en Entrenamiento."
+      : area === "language"
+        ? "Practica sujeto, predicado y verbo en Entrenamiento."
+        : "Repasa vocabulario y to be en el modo Entrenamiento.";
   }
-  return `Te recomiendo practicar más ${focus} en el Modo Entrenamiento.`;
+  if (area === "math") {
+    return `Te recomiendo practicar ${TYPE_NAME[top as MathExerciseType] ?? top} en Entrenamiento.`;
+  }
+  if (area === "language") {
+    const labels: Record<string, string> = {
+      sujeto: "el sujeto",
+      predicado: "el predicado",
+      verbo: "los verbos",
+      tipo_oracion: "los tipos de oración",
+      ortografia: "la ortografía",
+      concordancia: "la concordancia",
+      complemento: "los complementos",
+      lexico: "clases de palabras",
+      sintaxis: "el análisis de oraciones",
+    };
+    return `Te recomiendo practicar ${labels[top] ?? top} en la Biblioteca (Entrenamiento).`;
+  }
+  return `Practica un poco más «${top}» en English (Entrenamiento).`;
 }

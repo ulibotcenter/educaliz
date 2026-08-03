@@ -12,17 +12,17 @@ export function EnglishMap() {
   const areaSessionCount = useGameStore((s) => s.areaSessionCount.english);
 
   return (
-    <div className="space-y-5">
+    <div className="animate-fade-in space-y-5">
       <div className="space-y-2">
         <p className="inline-flex items-center gap-1.5 text-sm font-medium text-accent-2">
           <Languages className="h-4 w-4" aria-hidden />
           Cámara del Inglés
         </p>
         <h1 className="font-display text-2xl font-semibold text-fg">Choose your level</h1>
-        <p className="text-sm text-muted">
+        <p className="text-base text-muted">
           Vocabulary + simple sentences — 5 random spells each run.
         </p>
-        <p className="text-sm font-medium text-fg">Partidas oficiales: {areaSessionCount}</p>
+        <p className="text-sm font-medium text-fg">Partidas hechas: {areaSessionCount}</p>
       </div>
 
       <ModeToggle />

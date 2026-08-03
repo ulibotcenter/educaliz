@@ -1,8 +1,10 @@
 import { Flame, Sparkles, Star } from "lucide-react";
-import { useGameStore, BADGE_INFO } from "@/lib/game-store";
+import { useGameStore } from "@/lib/game-store";
+import { SESSION_GOALS } from "@/lib/progress-goals";
 import { xpProgress } from "@/lib/progression";
 import { childFriendlyInsights } from "@/lib/skill-insights";
 import { XpBar } from "@/components/game/XpBar";
+import { PermanentBadgeCard } from "@/components/game/BadgeChips";
 import { cn } from "@/lib/utils";
 
 export function ProgressPanel({ compact }: { compact?: boolean }) {
@@ -28,28 +30,28 @@ export function ProgressPanel({ compact }: { compact?: boolean }) {
       label: "Matemáticas",
       emoji: "🔢",
       value: areaSessionCount.math || mathCompleted.length,
-      max: 30,
+      max: SESSION_GOALS.math,
       color: "bg-primary",
     },
     {
       label: "Lengua",
       emoji: "📖",
       value: areaSessionCount.language || languageCompleted.length,
-      max: 15,
+      max: SESSION_GOALS.language,
       color: "bg-accent",
     },
     {
       label: "Inglés",
       emoji: "🇬🇧",
       value: areaSessionCount.english || englishCompleted.length,
-      max: 12,
+      max: SESSION_GOALS.english,
       color: "bg-accent-2",
     },
     {
       label: "Lectura",
       emoji: "📚",
       value: readingDone,
-      max: 2,
+      max: SESSION_GOALS.reading,
       color: "bg-success",
     },
   ];
@@ -75,27 +77,22 @@ export function ProgressPanel({ compact }: { compact?: boolean }) {
           <span className="font-semibold tabular-nums text-fg">{points}</span>
           <span className="text-xs text-muted">pts</span>
         </div>
-        <div className="flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-sm">
-          <Sparkles className="h-4 w-4 text-accent" aria-hidden />
-          <span className="font-semibold tabular-nums text-fg">{badges.length}</span>
-          <span className="text-xs text-muted">insignias</span>
+        <div className="min-w-[8rem] flex-1">
+          <XpBar compact />
         </div>
       </div>
 
-      <XpBar />
-
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="space-y-2.5">
         {towers.map((t) => {
           const pct = Math.min(100, Math.round((t.value / t.max) * 100));
           return (
-            <div key={t.label} className="rounded-xl border border-border bg-surface/40 p-3">
-              <div className="mb-1.5 flex items-center justify-between text-sm">
+            <div key={t.label} className="space-y-1">
+              <div className="flex items-center justify-between text-xs">
                 <span className="font-medium text-fg">
                   {t.emoji} {t.label}
                 </span>
-                <span className="tabular-nums text-xs text-muted">
-                  {t.value}
-                  {t.label === "Lectura" ? `/${t.max}` : " partidas"}
+                <span className="tabular-nums text-muted">
+                  {t.value}/{t.max} partidas
                 </span>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-surface-2">
@@ -109,32 +106,28 @@ export function ProgressPanel({ compact }: { compact?: boolean }) {
         })}
       </div>
 
-      {!compact && (
-        <ul className="space-y-1 text-sm text-muted">
-          <li>· {insights.strongLine}</li>
-          <li>· {insights.weakLine}</li>
-        </ul>
+      {!compact && insights.hasData && (
+        <div className="rounded-xl border border-border bg-surface/40 p-3 text-sm text-muted">
+          <p className="font-medium text-fg">
+            <Sparkles className="mr-1 inline h-4 w-4 text-primary" />
+            Brillos recientes
+          </p>
+          <p className="mt-1">{insights.strongLine}</p>
+          <p className="mt-1">{insights.weakLine}</p>
+        </div>
       )}
 
       {!compact && recent.length > 0 && (
-        <div>
-          <p className="mb-2 text-xs font-medium text-muted">Insignias recientes</p>
-          <div className="flex flex-wrap gap-2">
-            {recent.map((id) => (
-              <span
-                key={id}
-                className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-medium text-fg"
-              >
-                {BADGE_INFO[id]?.emoji ?? "🏅"} {BADGE_INFO[id]?.name ?? id}
-              </span>
-            ))}
-          </div>
+        <div className="flex flex-wrap gap-2">
+          {recent.map((id) => (
+            <PermanentBadgeCard key={id} id={id} compact />
+          ))}
         </div>
       )}
 
       {compact && (
         <p className="text-xs text-muted">
-          Nv. {prog.level} · {prog.title}
+          Nv.{prog.level} · {prog.title} · {badges.length} insignias
         </p>
       )}
     </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { LEVEL_META, LANG_BANK, type LangQ } from "@/lib/data/question-banks";
+import { correctCheer } from "@/lib/explain";
 import { useGameStore } from "@/lib/game-store";
 import { playCorrect, playWrong } from "@/lib/sounds";
 import { cn, normalizeAnswer } from "@/lib/utils";
@@ -42,6 +43,7 @@ export function LanguagePlay() {
   const [wrongCount, setWrongCount] = useState(0);
   const [failTags, setFailTags] = useState<string[]>([]);
   const [showSummary, setShowSummary] = useState(false);
+  const [streakOk, setStreakOk] = useState(0);
 
   const q = questions[idx];
 
@@ -95,6 +97,7 @@ export function LanguagePlay() {
       setEarnedPts(pts);
       setFeedback("ok");
       playCorrect();
+      setStreakOk((s) => s + 1);
       awardCorrect(practice ? 0 : 12);
       setCorrectCount((n) => n + 1);
       recordSkill(q.skillTag, "ok");
@@ -102,6 +105,7 @@ export function LanguagePlay() {
       setFeedback("bad");
       setEarnedPts(0);
       playWrong();
+      setStreakOk(0);
       awardWrong();
       setWrongCount((n) => n + 1);
       setFailTags((t) => [...t, q.skillTag]);
@@ -143,7 +147,7 @@ export function LanguagePlay() {
 
       <div className="space-y-5 rounded-xl border border-border bg-card p-5 sm:p-6">
         <div>
-          <h2 className="font-display text-xl font-semibold text-fg sm:text-2xl">{q.title}</h2>
+          <h2 className="font-display text-[1.35rem] font-semibold leading-snug text-fg sm:text-2xl">{q.title}</h2>
           <p className="mt-1.5 text-sm text-muted">{q.tip}</p>
         </div>
 
@@ -152,7 +156,7 @@ export function LanguagePlay() {
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-accent">
               Oración a analizar
             </p>
-            <p className="font-display text-xl font-semibold text-fg">{q.text}</p>
+            <p className="font-display text-xl font-semibold leading-snug text-fg sm:text-2xl">{q.text}</p>
           </div>
         )}
 
@@ -164,7 +168,7 @@ export function LanguagePlay() {
               disabled={answered}
               onClick={() => setChoice(opt)}
               className={cn(
-                "w-full min-h-14 rounded-xl border px-4 py-3 text-left text-base",
+                "w-full min-h-14 rounded-xl border px-4 py-3.5 text-left text-base font-medium sm:text-lg",
                 choice === opt
                   ? "border-primary bg-primary/15"
                   : "border-border bg-surface",
@@ -178,7 +182,7 @@ export function LanguagePlay() {
         {feedback === "ok" && (
           <AnswerFeedback
             kind="ok"
-            title="¡Bien! La biblioteca te sonríe."
+            title={correctCheer(streakOk, "language")}
             points={earnedPts}
             practice={practice}
           />

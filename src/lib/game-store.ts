@@ -88,7 +88,6 @@ export type GameState = {
   streak: number;
   lastPlayDate: string | null;
   mathCompleted: number[];
-  mathExerciseDone: Record<string, boolean>;
   languageCompleted: number[];
   englishCompleted: number[];
   books: [BookFicha, BookFicha];
@@ -119,18 +118,12 @@ export type GameState = {
   ownedShopItems: string[];
   lastAppOpen: string | null;
   view: ViewId;
-  activeMathTask: number | null;
-  activeLangId: number | null;
-  activeEngId: number | null;
   setView: (v: ViewId) => void;
   setName: (n: string) => void;
   setPlayMode: (m: PlayMode) => void;
   setTheme: (t: ThemeId) => void;
   setAvatar: (partial: Partial<AvatarConfig>) => void;
   buyShopItem: (itemId: string) => string;
-  startMath: (taskId: number) => void;
-  startLang: (id: number) => void;
-  startEng: (id: number) => void;
   startLevel: (area: "math" | "language" | "english", level: DiffLevel) => void;
   clearSession: () => void;
   completeSession: () => void;
@@ -143,9 +136,6 @@ export type GameState = {
   recordSkill: (tag: string, result: "ok" | "bad") => void;
   recordFail: (area: ReviewKey["area"], key: string) => void;
   clearReviewKey: (area: ReviewKey["area"], key: string) => void;
-  completeMathExercise: (taskId: number, exIndex: number) => void;
-  completeLanguage: (id: number) => void;
-  completeEnglish: (id: number) => void;
   recordPerfectMission: () => void;
   beatBoss: (zone: "math" | "language" | "english") => void;
   dismissStory: () => void;
@@ -254,7 +244,6 @@ export const useGameStore = create<GameState>()(
       streak: 0,
       lastPlayDate: null,
       mathCompleted: [],
-      mathExerciseDone: {},
       languageCompleted: [],
       englishCompleted: [],
       books: [emptyBook(), emptyBook()],
@@ -285,14 +274,11 @@ export const useGameStore = create<GameState>()(
       ownedShopItems: [],
       lastAppOpen: null,
       view: "home",
-      activeMathTask: null,
-      activeLangId: null,
-      activeEngId: null,
 
       setView: (v) => set({ view: v }),
       setName: (n) => set({ playerName: n.trim() || "Liz" }),
       setPlayMode: (m) => set({ playMode: m }),
-      setTheme: (t) => set({ theme: (t as string) === "chispa" ? "aurora" : t }),
+      setTheme: (t) => set({ theme: t }),
       setAvatar: (partial) =>
         set({ avatar: normalizeAvatar({ ...get().avatar, ...partial }) }),
 
@@ -314,10 +300,6 @@ export const useGameStore = create<GameState>()(
         set({ ownedShopItems, xp, avatar });
         return `¡Comprado! ${item.emoji} ${item.name}`;
       },
-
-      startMath: (taskId) => set({ activeMathTask: taskId, view: "math-play" }),
-      startLang: (id) => set({ activeLangId: id, view: "language-play" }),
-      startEng: (id) => set({ activeEngId: id, view: "english-play" }),
 
       startLevel: (area, level) => {
         const n = 5;
@@ -540,10 +522,6 @@ export const useGameStore = create<GameState>()(
         });
       },
 
-      completeMathExercise: () => {},
-      completeLanguage: () => {},
-      completeEnglish: () => {},
-
       recordPerfectMission: () => {
         const s = get();
         if (s.playMode === "practice") return;
@@ -619,7 +597,6 @@ export const useGameStore = create<GameState>()(
           streak: 0,
           lastPlayDate: null,
           mathCompleted: [],
-          mathExerciseDone: {},
           languageCompleted: [],
           englishCompleted: [],
           books: [emptyBook(), emptyBook()],
@@ -648,21 +625,24 @@ export const useGameStore = create<GameState>()(
           ownedShopItems: [],
           lastAppOpen: null,
           view: "home",
-          activeMathTask: null,
-          activeLangId: null,
-          activeEngId: null,
         }),
     }),
     {
       name: "liz-academia-arcana-v4",
-      version: 5,
+      version: 6,
       migrate: (persisted: unknown, fromVersion: number) => {
         const p = (persisted ?? {}) as Record<string, unknown>;
+        // Always map legacy theme id
+        if (p.theme === "chispa" || !p.theme) p.theme = "aurora";
         if (fromVersion < 5) {
-          if (p.theme === "chispa") p.theme = "aurora";
           if (!Array.isArray(p.ownedShopItems)) p.ownedShopItems = [];
           p.avatar = normalizeAvatar(p.avatar as Partial<AvatarConfig>);
         }
+        // Drop legacy mission fields if present
+        delete p.activeMathTask;
+        delete p.activeLangId;
+        delete p.activeEngId;
+        delete p.mathExerciseDone;
         return p as never;
       },
     },

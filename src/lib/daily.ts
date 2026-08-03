@@ -1,6 +1,4 @@
-import { MATH_TASKS } from "@/lib/data/math-tasks";
-import { LANGUAGE_SENTENCES } from "@/lib/data/language-tasks";
-import { ENGLISH_TASKS } from "@/lib/data/english-tasks";
+import type { DiffLevel } from "@/lib/data/question-banks";
 
 export function dayIndex() {
   const start = new Date(2026, 5, 22);
@@ -9,11 +7,8 @@ export function dayIndex() {
   return Math.max(0, diff);
 }
 
-export function getDailyIds() {
+/** Nivel de dificultad del día (1–5), rotativo y suave */
+export function getDailyLevel(): DiffLevel {
   const d = dayIndex();
-  return {
-    mathId: (d % MATH_TASKS.length) + 1,
-    langId: LANGUAGE_SENTENCES[d % LANGUAGE_SENTENCES.length]!.id,
-    engId: ENGLISH_TASKS[d % ENGLISH_TASKS.length]!.id,
-  };
+  return ((d % 5) + 1) as DiffLevel;
 }

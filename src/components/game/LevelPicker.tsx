@@ -24,7 +24,7 @@ export function LevelPicker({
             type="button"
             onClick={() => onPick(lv)}
             className={cn(
-              "flex min-h-[5.5rem] flex-col items-start gap-1 rounded-2xl border border-border bg-card p-4 text-left transition",
+              "flex min-h-[5.75rem] flex-col items-start gap-1 rounded-2xl border border-border bg-card p-4 text-left transition",
               "hover:border-primary/50 hover:bg-surface active:scale-[0.99]",
             )}
           >
@@ -34,9 +34,10 @@ export function LevelPicker({
             <span className="font-display text-lg font-semibold text-fg">
               {meta.name}
             </span>
-            <span className="text-sm text-muted">{meta.blurb}</span>
+            <span className="text-sm leading-snug text-muted">{meta.blurb}</span>
             <span className="mt-1 text-xs text-muted">
-              {n} preguntas en el baúl · {runs} partidas hechas
+              {n} hechizos en el baúl
+              {runs > 0 ? ` · jugado ${runs}×` : " · ¡nuevo!"}
             </span>
           </button>
         );
