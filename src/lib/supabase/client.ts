@@ -122,17 +122,16 @@ function logEnvOnce(status: SupabaseEnvStatus) {
   if (typeof console === "undefined") return;
   if (status.configured) {
     console.info(
-      "[Academia Arcana] Supabase: nube OK ·",
-      status.urlHost,
-      "· key:",
-      status.hasKey ? `sí (${status.key.slice(0, 6)}…)` : "no",
+      "[Academia Arcana] Nube: OK",
+      `· host=${status.urlHost ?? "?"}`,
+      `· key=${status.hasKey ? "sí" : "no"}`,
     );
   } else {
     console.warn(
-      "[Academia Arcana] Supabase: variables no encontradas ·",
-      `VITE_SUPABASE_URL=${status.hasUrl ? "sí" : "no"}`,
-      `VITE_SUPABASE_ANON_KEY=${status.hasKey ? "sí" : "no"}`,
-      "· modo local hasta configurarlas en el build/deploy",
+      "[Academia Arcana] Nube: variables no encontradas",
+      `· VITE_SUPABASE_URL=${status.hasUrl ? "sí" : "no"}`,
+      `· VITE_SUPABASE_ANON_KEY=${status.hasKey ? "sí" : "no"}`,
+      "· modo local (el progreso se guarda en este aparato)",
     );
   }
 }

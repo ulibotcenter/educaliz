@@ -362,10 +362,29 @@ export const useProfilesStore = create<ProfilesState>()(
             set({ cloudEnabled: true });
             const remote = await insertProfile(profile);
             if (!remote.ok) {
-              set({ cloudError: remote.error, lastSyncOk: false });
-              return { ok: false, error: remote.error };
+              // Cloud failed — keep local progress, never block the child
+              console.warn(
+                "[Academia Arcana] Nube: no se pudo crear el perfil en la nube ·",
+                remote.error,
+                "· se guarda en local",
+              );
+              set((s) => {
+                const profiles = { ...s.profiles, [id]: profile };
+                if (referrerPatch) profiles[referrerPatch.id] = referrerPatch;
+                return {
+                  profiles,
+                  activeProfileId: id,
+                  lastSyncOk: false,
+                  cloudError:
+                    "La nube no respondió, pero tu perfil está guardado en este aparato. Puedes seguir jugando.",
+                };
+              });
+              applyProgressToGame(progress, displayName);
+              return { ok: true, profile };
             }
             let saved = ensureInviteFields(remote.data);
+            // Prefer our full local snapshot if cloud row came back thinner
+            saved = mergeProfilePreferRicher(profile, saved);
             // Persist invite meta if remote row lacked it
             if (!remote.data.inviteCode || referredBy) {
               const up = await updateProfileRemote({
@@ -375,7 +394,7 @@ export const useProfilesStore = create<ProfilesState>()(
                 referralCount: 0,
                 progress: profile.progress,
               });
-              if (up.ok) saved = ensureInviteFields(up.data);
+              if (up.ok) saved = mergeProfilePreferRicher(saved, up.data);
             }
             if (referrerPatch) {
               const upRef = await updateProfileRemote(referrerPatch);
@@ -415,18 +434,15 @@ export const useProfilesStore = create<ProfilesState>()(
             return { ok: true, profile: saved };
           }
 
-          // Offline / no Supabase env — local only
-          const stillCloud = isSupabaseConfigured();
+          // Offline / no Supabase env — local only (progress stays safe)
           set((s) => {
             const profiles = { ...s.profiles, [id]: profile };
             if (referrerPatch) profiles[referrerPatch.id] = referrerPatch;
             return {
               profiles,
               activeProfileId: id,
-              cloudEnabled: stillCloud,
-              cloudError: stillCloud
-                ? null
-                : "Modo local: la nube no está configurada todavía.",
+              cloudEnabled: false,
+              cloudError: null,
             };
           });
           applyProgressToGame(progress, displayName);
@@ -590,11 +606,23 @@ export const useProfilesStore = create<ProfilesState>()(
           if (!profile) return;
           const remote = await updateProfileRemote(profile);
           if (!remote.ok) {
-            set({ cloudError: remote.error, lastSyncOk: false });
+            // Soft-fail: local progress stays; friendly notice only
+            console.warn(
+              "[Academia Arcana] Nube: no se pudo sincronizar ·",
+              remote.error,
+              "· progreso local intacto",
+            );
+            set({
+              cloudError:
+                "No pudimos sincronizar con la nube ahora. Tu progreso sigue guardado aquí.",
+              lastSyncOk: false,
+            });
             return;
           }
+          // Keep the richer of local vs cloud (never drop XP)
+          const merged = mergeProfilePreferRicher(profile, remote.data);
           set((s) => ({
-            profiles: { ...s.profiles, [id]: remote.data },
+            profiles: { ...s.profiles, [id]: merged },
             lastSyncOk: true,
             cloudError: null,
           }));
@@ -653,8 +681,27 @@ export const useProfilesStore = create<ProfilesState>()(
           if (cloudOn) {
             const remote = await deleteProfileRemote(id);
             if (!remote.ok) {
-              set({ cloudError: remote.error, lastSyncOk: false });
-              return { ok: false, error: remote.error };
+              // Still remove local so the family can manage this device;
+              // warn that the cloud copy may remain until retry.
+              console.warn(
+                "[Academia Arcana] Nube: no se pudo borrar en la nube ·",
+                remote.error,
+                "· se borra en local",
+              );
+              set((s) => {
+                const profiles = { ...s.profiles };
+                delete profiles[id];
+                const activeProfileId =
+                  s.activeProfileId === id ? null : s.activeProfileId;
+                return {
+                  profiles,
+                  activeProfileId,
+                  lastSyncOk: false,
+                  cloudError:
+                    "Perfil borrado aquí. Si la nube no respondió, puede quedar una copia hasta reintentar.",
+                };
+              });
+              return { ok: true };
             }
           }
 
