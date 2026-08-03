@@ -14,6 +14,40 @@ import { cn } from "@/lib/utils";
 const SPIN_MS = 6200;
 const N = ROULETTE_PRIZES.length;
 const SLICE = 360 / N;
+/** Keep pointer away from slice borders (~12% each side) */
+const EDGE_PAD = SLICE * 0.12;
+const FULL_TURNS = 10;
+
+/**
+ * Geometry (CSS):
+ * - conic-gradient from 0° at top, clockwise
+ * - slice i covers [i*SLICE, (i+1)*SLICE)
+ * - positive CSS rotate moves the wheel clockwise
+ * - pointer fixed at top (0°)
+ * - wheel angle θ lands under pointer when rotation ≡ -θ (mod 360)
+ */
+export function pickLanding(idx: number, rand = Math.random()): {
+  idx: number;
+  /** Absolute angle on the wheel (deg) that stops under the pointer */
+  targetAngle: number;
+  /** Shortest positive rotation delta in [0, 360) */
+  land: number;
+} {
+  const safeIdx = ((idx % N) + N) % N;
+  const min = safeIdx * SLICE + EDGE_PAD;
+  const max = (safeIdx + 1) * SLICE - EDGE_PAD;
+  const targetAngle = min + rand * (max - min);
+  const land = (360 - targetAngle + 360) % 360;
+  return { idx: safeIdx, targetAngle, land };
+}
+
+/** Which slice is under the pointer for a given CSS rotation */
+export function sliceUnderPointer(rotationDeg: number): number {
+  const r = ((rotationDeg % 360) + 360) % 360;
+  // Angle of wheel that sits at top
+  const angleAtTop = (360 - r) % 360;
+  return Math.min(N - 1, Math.floor(angleAtTop / SLICE));
+}
 
 export function RewardRoulette() {
   const spins = useGameStore((s) => s.rouletteSpins);
@@ -41,6 +75,7 @@ export function RewardRoulette() {
     [tempBadges],
   );
 
+  // Standard conic: from top (0°), clockwise — matches label + landing math
   const conic = ROULETTE_PRIZES.map((s, i) => {
     const start = i * SLICE;
     const end = (i + 1) * SLICE;
@@ -65,20 +100,21 @@ export function RewardRoulette() {
     setHighlightIdx(null);
 
     const idx = Math.floor(Math.random() * N);
-    const targetInSlice = idx * SLICE + SLICE / 2;
-    const land = 360 - targetInSlice;
-    const extra = 10 * 360 + land;
-    setRotation((r) => {
-      const base = Math.ceil(r / 360) * 360;
-      return base + extra;
-    });
+    const { land } = pickLanding(idx);
+    const extra = FULL_TURNS * 360 + land;
+    // Use current rotation (not setState updater side-effects — StrictMode-safe)
+    const base = Math.ceil(rotation / 360) * 360;
+    const finalRotation = base + extra;
+    setRotation(finalRotation);
 
     playRouletteSpin(SPIN_MS);
 
     window.setTimeout(() => {
-      const prize = ROULETTE_PRIZES[idx]!;
+      // Safety: prize must match the slice under the pointer
+      const landed = sliceUnderPointer(finalRotation);
+      const prizeIdx = landed === idx ? idx : landed;
+      const prize = ROULETTE_PRIZES[prizeIdx]!;
       const msg = spinRoulette(prize.id);
-      // Store may reject if spins race to 0
       if (msg === "No te quedan giros.") {
         setDeniedMsg(msg);
         setSpinning(false);
@@ -86,7 +122,7 @@ export function RewardRoulette() {
       }
       setResultMsg(msg);
       setWonPrize(prizeById(prize.id) ?? prize);
-      setHighlightIdx(idx);
+      setHighlightIdx(prizeIdx);
       setRevealKey((k) => k + 1);
       setSpinning(false);
       playRoulettePrize();
@@ -146,7 +182,6 @@ export function RewardRoulette() {
         </div>
       </div>
 
-      {/* Wheel stage — keep existing visual structure below via remaining file */}
       <div className="relative mx-auto w-full max-w-[320px] select-none">
         <div
           className={cn(
@@ -155,19 +190,21 @@ export function RewardRoulette() {
           )}
           aria-hidden
         />
-        {/* Pointer */}
+        {/* Pointer at top — points down into the wheel */}
         <div
           className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-1"
           aria-hidden
         >
-          <div className="h-0 w-0 border-l-[12px] border-r-[12px] border-t-[22px] border-l-transparent border-r-transparent border-t-primary drop-shadow-md" />
+          <div className="h-0 w-0 border-l-[14px] border-r-[14px] border-t-[26px] border-l-transparent border-r-transparent border-t-primary drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)]" />
+          <div className="absolute left-1/2 top-[18px] h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-primary ring-2 ring-card" />
         </div>
 
         <div className="relative aspect-square w-full">
           <div
             className="absolute inset-0 rounded-full border-[6px] border-primary/50 shadow-[inset_0_0_24px_rgba(0,0,0,0.15),0_8px_28px_rgba(0,0,0,0.12)]"
             style={{
-              background: `conic-gradient(from -${SLICE / 2}deg, ${conic})`,
+              // from 0deg = top, clockwise — aligned with label + landing math
+              background: `conic-gradient(from 0deg, ${conic})`,
               transform: `rotate(${rotation}deg)`,
               transition: spinning
                 ? `transform ${SPIN_MS}ms cubic-bezier(0.12, 0.75, 0.12, 1)`
@@ -175,9 +212,10 @@ export function RewardRoulette() {
             }}
           >
             {ROULETTE_PRIZES.map((p, i) => {
+              // Label at geometric center of slice i
               const mid = i * SLICE + SLICE / 2;
               const rad = ((mid - 90) * Math.PI) / 180;
-              const r = 39;
+              const r = 36;
               const x = 50 + r * Math.cos(rad);
               const y = 50 + r * Math.sin(rad);
               const won = !spinning && highlightIdx === i;
@@ -185,13 +223,16 @@ export function RewardRoulette() {
                 <div
                   key={p.id}
                   className={cn(
-                    "absolute flex w-[22%] -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center text-center",
-                    won && "scale-110 drop-shadow-md",
+                    "absolute flex w-[24%] -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center text-center transition-transform",
+                    won && "z-10 scale-125 drop-shadow-lg",
                   )}
                   style={{ left: `${x}%`, top: `${y}%` }}
                 >
                   <span
-                    className="text-[1.15rem] leading-none sm:text-[1.35rem]"
+                    className={cn(
+                      "text-[1.15rem] leading-none sm:text-[1.35rem]",
+                      won && "text-[1.45rem] sm:text-[1.6rem]",
+                    )}
                     aria-hidden
                   >
                     {p.emoji}
@@ -210,7 +251,10 @@ export function RewardRoulette() {
               );
             })}
             <div className="absolute left-1/2 top-1/2 z-10 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-[3px] border-primary/70 bg-gradient-to-br from-card via-primary/20 to-accent/30 shadow-[0_0_14px_color-mix(in_oklab,var(--color-primary)_40%,transparent),inset_0_2px_6px_rgba(255,255,255,0.35)] sm:h-12 sm:w-12">
-              <Sparkles className="h-4 w-4 text-primary sm:h-5 sm:w-5" aria-hidden />
+              <Sparkles
+                className="h-4 w-4 text-primary sm:h-5 sm:w-5"
+                aria-hidden
+              />
             </div>
           </div>
         </div>
