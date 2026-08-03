@@ -4,6 +4,9 @@ import { useGameStore } from "@/lib/game-store";
 import {
   AVATAR_OPTIONS,
   XP_SHOP,
+  avatarFaceEmoji,
+  defaultFaceForLook,
+  facesForLook,
   isAvatarOptionUnlocked,
   normalizeAvatar,
   type AvatarConfig,
@@ -12,34 +15,6 @@ import {
 } from "@/lib/progression";
 import { TEMP_BADGE_LABELS } from "@/lib/roulette-prizes";
 import { cn } from "@/lib/utils";
-
-/**
- * Clean emoji faces — skin via Fitzpatrick modifiers.
- * Hair/accessories are SMALL accents around the face, never covering it.
- */
-const GIRL_FACE: Record<AvatarConfig["skin"], string> = {
-  fair: "👧",
-  ivory: "👧🏻",
-  warm: "👧🏼",
-  peach: "👧🏼",
-  rose: "👧🏻",
-  golden: "👧",
-  olive: "👧🏻",
-  bronze: "👧🏾",
-  deep: "👧🏿",
-};
-
-const BOY_FACE: Record<AvatarConfig["skin"], string> = {
-  fair: "👦",
-  ivory: "👦🏻",
-  warm: "👦🏼",
-  peach: "👦🏼",
-  rose: "👦🏻",
-  golden: "👦",
-  olive: "👦🏻",
-  bronze: "👦🏾",
-  deep: "👦🏿",
-};
 
 const CAPE_RING: Record<AvatarConfig["cape"], string> = {
   violet: "from-violet-500/90 to-purple-900/90",
@@ -85,19 +60,6 @@ const HAT_EMOJI: Record<AvatarConfig["hat"], string> = {
   nebula: "🌌",
 };
 
-/** Tiny hair badge UNDER the face ring — never over eyes */
-const HAIR_BADGE: Record<AvatarConfig["hair"], string> = {
-  none: "",
-  short: "✂️",
-  wavy: "〰️",
-  curly: "🌀",
-  long: "💇",
-  bun: "🎀",
-  spiky: "⚡",
-  braids: "🧵",
-  ponytail: "🎋",
-};
-
 const FAMILIAR_EMOJI: Record<AvatarConfig["familiar"], string> = {
   owl: "🦉",
   fox: "🦊",
@@ -123,18 +85,6 @@ const ACC_BADGE: Record<AvatarConfig["accessory"], string> = {
   earrings: "🌙",
   halo: "💫",
   belt: "⚡",
-};
-
-const SKIN_HEX: Record<AvatarConfig["skin"], string> = {
-  fair: "#f6d4b5",
-  ivory: "#ffe8d4",
-  warm: "#e4b07a",
-  peach: "#f0bc9c",
-  rose: "#efc0b4",
-  golden: "#d4a06a",
-  olive: "#c49a62",
-  bronze: "#a06a40",
-  deep: "#6b3f24",
 };
 
 const RARITY_LABEL: Record<string, string> = {
@@ -174,8 +124,10 @@ export function AvatarPortrait({
     size === "sm" ? "h-12 w-12" : size === "lg" ? "h-28 w-28" : "h-20 w-20";
   const face =
     size === "sm" ? "text-3xl" : size === "lg" ? "text-6xl" : "text-4xl";
-  const badge =
-    size === "sm" ? "text-[10px]" : size === "lg" ? "text-base" : "text-xs";
+  const hatSize =
+    size === "sm" ? "text-base" : size === "lg" ? "text-3xl" : "text-xl";
+  const chip =
+    size === "sm" ? "h-4 w-4 text-[8px]" : size === "lg" ? "h-7 w-7 text-sm" : "h-5 w-5 text-[10px]";
 
   const glow =
     level >= 8
@@ -200,14 +152,14 @@ export function AvatarPortrait({
           ? "temp-aura-stars"
           : "";
 
-  const faceEmoji =
-    avatar.look === "boy"
-      ? (BOY_FACE[avatar.skin] ?? "👦")
-      : (GIRL_FACE[avatar.skin] ?? "👧");
+  const faceEmoji = avatarFaceEmoji(avatar);
 
   return (
     <div
-      className={cn("relative inline-flex shrink-0 items-center justify-center", className)}
+      className={cn(
+        "relative inline-flex shrink-0 items-center justify-center",
+        className,
+      )}
     >
       {tempActive && (
         <span
@@ -219,10 +171,24 @@ export function AvatarPortrait({
         />
       )}
 
-      {/* Soft cape ring BEHIND the face emoji — face always on top */}
+      {/* Hat sits ABOVE the face circle — larger, never over eyes */}
+      {avatar.hat !== "none" && (
+        <span
+          className={cn(
+            "pointer-events-none absolute left-1/2 z-[5] -translate-x-1/2 drop-shadow-md",
+            hatSize,
+            size === "sm" ? "-top-2" : size === "lg" ? "-top-4" : "-top-3",
+          )}
+          aria-hidden
+        >
+          {HAT_EMOJI[avatar.hat]}
+        </span>
+      )}
+
+      {/* Cape ring behind face */}
       <div
         className={cn(
-          "relative z-[1] grid place-items-center rounded-full bg-gradient-to-b p-[12%]",
+          "relative z-[1] grid place-items-center rounded-full bg-gradient-to-b p-[11%]",
           CAPE_RING[avatar.cape] ?? CAPE_RING.violet,
           dim,
           glow,
@@ -232,13 +198,14 @@ export function AvatarPortrait({
           tempInfo?.hue === "sky" && "ring-sky-300/80",
         )}
       >
-        <div className="relative grid h-full w-full place-items-center rounded-full bg-card/30">
-          {/* Face — always fully visible, largest element */}
-          <span className={cn("relative z-[3] leading-none select-none", face)} aria-hidden>
+        <div className="relative grid h-full w-full place-items-center rounded-full bg-card/25">
+          {/* Face emoji — full face with hair baked in; always unobstructed */}
+          <span
+            className={cn("relative z-[3] leading-none select-none", face)}
+            aria-hidden
+          >
             {faceEmoji}
           </span>
-
-          {/* Wand tip — small, bottom-right of ring, outside face */}
           <span
             className={cn(
               "absolute bottom-[8%] right-[4%] z-[2] h-[28%] w-[10%] rounded-full shadow",
@@ -249,39 +216,12 @@ export function AvatarPortrait({
         </div>
       </div>
 
-      {/* Hat ABOVE the ring, not over eyes */}
-      {avatar.hat !== "none" && (
-        <span
-          className={cn(
-            "absolute left-1/2 top-0 z-[4] -translate-x-1/2 -translate-y-[35%] drop-shadow",
-            badge,
-          )}
-          aria-hidden
-        >
-          {HAT_EMOJI[avatar.hat]}
-        </span>
-      )}
-
-      {/* Hair style badge — bottom-left chip, never on face */}
-      {avatar.hair !== "none" && (
-        <span
-          className={cn(
-            "absolute -bottom-0.5 -left-0.5 z-[4] grid place-items-center rounded-full border border-border bg-card shadow",
-            size === "sm" ? "h-4 w-4 text-[8px]" : size === "lg" ? "h-7 w-7 text-sm" : "h-5 w-5 text-[10px]",
-          )}
-          title={`Pelo: ${avatar.hair}`}
-          aria-hidden
-        >
-          {HAIR_BADGE[avatar.hair]}
-        </span>
-      )}
-
-      {/* Accessory chip — top-left, outside face */}
+      {/* Accessory chip — outside face */}
       {avatar.accessory !== "none" && (
         <span
           className={cn(
-            "absolute -left-0.5 -top-0.5 z-[4] grid place-items-center rounded-full border border-border bg-card shadow",
-            size === "sm" ? "h-4 w-4 text-[8px]" : size === "lg" ? "h-7 w-7 text-sm" : "h-5 w-5 text-[10px]",
+            "absolute -left-0.5 top-1 z-[4] grid place-items-center rounded-full border border-border bg-card shadow",
+            chip,
           )}
           aria-hidden
         >
@@ -289,7 +229,7 @@ export function AvatarPortrait({
         </span>
       )}
 
-      {/* Familiar — bottom-right, outside face */}
+      {/* Familiar */}
       <span
         className={cn(
           "absolute -bottom-0.5 -right-1 z-[4] drop-shadow",
@@ -303,11 +243,10 @@ export function AvatarPortrait({
       {tempActive && tempInfo && (
         <span
           className={cn(
-            "absolute -right-1 -top-1 z-[5] rounded-full border border-dashed border-accent/70 bg-card px-0.5 shadow",
-            badge,
+            "absolute -right-1 top-0 z-[5] rounded-full border border-dashed border-accent/70 bg-card px-0.5 shadow",
+            size === "sm" ? "text-[10px]" : "text-sm",
           )}
           title={tempInfo.name}
-          aria-label={`Insignia temporal: ${tempInfo.name}`}
         >
           {tempInfo.emoji}
         </span>
@@ -318,63 +257,20 @@ export function AvatarPortrait({
 
 type Tab = "look" | "shop";
 
+/** No "Pelo" — faces in Tono include hair */
 const SECTIONS: {
-  key: keyof typeof AVATAR_OPTIONS;
+  key: Exclude<keyof typeof AVATAR_OPTIONS, "hair">;
   label: string;
   short: string;
 }[] = [
   { key: "look", label: "Look", short: "👤" },
-  { key: "skin", label: "Tono", short: "🎨" },
-  { key: "hair", label: "Pelo", short: "💇" },
+  { key: "skin", label: "Tono", short: "😊" },
   { key: "hat", label: "Gorro", short: "👑" },
   { key: "cape", label: "Capa", short: "🧥" },
   { key: "wand", label: "Varita", short: "🪄" },
   { key: "familiar", label: "Amigo", short: "🦉" },
   { key: "accessory", label: "Extra", short: "✨" },
 ];
-
-function OptionGlyph({
-  section,
-  id,
-  emoji,
-}: {
-  section: keyof typeof AVATAR_OPTIONS;
-  id: string;
-  emoji: string;
-}) {
-  if (section === "skin") {
-    return (
-      <span
-        className="mx-auto block h-8 w-8 rounded-full border-2 border-white/50 shadow-inner"
-        style={{ background: SKIN_HEX[id as AvatarConfig["skin"]] ?? "#ccc" }}
-        aria-hidden
-      />
-    );
-  }
-  if (section === "look") {
-    return (
-      <span className="text-2xl leading-none" aria-hidden>
-        {id === "boy" ? "👦" : "👧"}
-      </span>
-    );
-  }
-  if (section === "cape") {
-    return (
-      <span
-        className={cn(
-          "mx-auto block h-8 w-8 rounded-full bg-gradient-to-b",
-          CAPE_RING[id as AvatarConfig["cape"]] ?? CAPE_RING.violet,
-        )}
-        aria-hidden
-      />
-    );
-  }
-  return (
-    <span className="text-2xl leading-none" aria-hidden>
-      {emoji === "·" ? "○" : emoji}
-    </span>
-  );
-}
 
 export function AvatarCustomizer() {
   const rawAvatar = useGameStore((s) => s.avatar);
@@ -389,7 +285,8 @@ export function AvatarCustomizer() {
   const prog = xpProgress(xp);
   const [tab, setTab] = useState<Tab>("look");
   const [shopMsg, setShopMsg] = useState<string | null>(null);
-  const [section, setSection] = useState<keyof typeof AVATAR_OPTIONS>("look");
+  const [section, setSection] =
+    useState<(typeof SECTIONS)[number]["key"]>("skin");
 
   const unlockCtx = {
     level: prog.level,
@@ -397,16 +294,38 @@ export function AvatarCustomizer() {
     ownedShop: ownedShopItems,
   };
 
-  const skinLabel =
-    AVATAR_OPTIONS.skin.find((s) => s.id === avatar.skin)?.label ?? "";
-  const hairLabel =
-    AVATAR_OPTIONS.hair.find((s) => s.id === avatar.hair)?.label ?? "";
+  const faceLabel =
+    AVATAR_OPTIONS.skin.find((s) => s.id === avatar.skin)?.label ??
+    (avatar.look === "boy" ? "Chico" : "Chica");
   const lookLabel = avatar.look === "boy" ? "Chico" : "Chica";
 
+  const optionsForSection = () => {
+    if (section === "skin") {
+      return facesForLook(avatar.look);
+    }
+    return AVATAR_OPTIONS[section];
+  };
+
+  function pickOption(sectionKey: (typeof SECTIONS)[number]["key"], id: string) {
+    if (sectionKey === "look") {
+      const look = id as "girl" | "boy";
+      // Switch to a matching face so the emoji matches Chico/Chica
+      const face = defaultFaceForLook(look);
+      setAvatar({ look, skin: face, hair: "none" });
+      setSection("skin");
+      return;
+    }
+    if (sectionKey === "skin") {
+      setAvatar({ skin: id as AvatarConfig["skin"], hair: "none" });
+      return;
+    }
+    setAvatar({ [sectionKey]: id } as Partial<AvatarConfig>);
+  }
+
   return (
-    <div className="mx-auto flex max-w-lg flex-col gap-0">
-      {/* ── STICKY PREVIEW — always visible while scrolling options ── */}
-      <div className="sticky top-[calc(var(--grok-banner-h,0px)+3.6rem)] z-20 -mx-1 border-b border-border/80 bg-bg/95 px-1 pb-3 pt-1 backdrop-blur-md supports-[backdrop-filter]:bg-bg/90">
+    <div className="mx-auto flex max-w-lg flex-col">
+      {/* Sticky preview + tabs */}
+      <div className="sticky top-[calc(var(--grok-banner-h,0px)+3.6rem)] z-20 -mx-1 border-b border-border/80 bg-bg/95 px-1 pb-2.5 pt-1 backdrop-blur-md supports-[backdrop-filter]:bg-bg/90">
         <div className="flex items-center gap-3 rounded-2xl border-2 border-primary/35 bg-card px-3 py-2.5 shadow-sm">
           <AvatarPortrait size="md" />
           <div className="min-w-0 flex-1">
@@ -414,7 +333,7 @@ export function AvatarCustomizer() {
               {name}
             </p>
             <p className="truncate text-xs text-muted">
-              {lookLabel} · {skinLabel} · {hairLabel}
+              {lookLabel} · {faceLabel}
             </p>
             <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
               <Star className="h-3 w-3" aria-hidden />
@@ -430,7 +349,6 @@ export function AvatarCustomizer() {
           </button>
         </div>
 
-        {/* Main tabs under sticky bar */}
         <div className="mt-2 grid grid-cols-2 gap-1.5 rounded-xl border border-border bg-surface/60 p-1">
           <button
             type="button"
@@ -460,13 +378,12 @@ export function AvatarCustomizer() {
         </div>
       </div>
 
-      {/* ── SCROLLABLE CONTENT ── */}
       <div className="mt-3 space-y-3 pb-6">
         {tab === "look" && (
           <>
-            {/* Horizontal category chips — one row, scroll-x if needed */}
+            {/* Category grid — stays inside screen, no off-screen scroll */}
             <div
-              className="flex gap-1.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              className="grid grid-cols-4 gap-1.5"
               role="tablist"
               aria-label="Categorías"
             >
@@ -478,37 +395,43 @@ export function AvatarCustomizer() {
                   aria-selected={section === key}
                   onClick={() => setSection(key)}
                   className={cn(
-                    "inline-flex min-h-10 shrink-0 items-center gap-1 rounded-full border-2 px-3 text-xs font-bold transition active:scale-[0.98]",
+                    "flex min-h-[3.25rem] flex-col items-center justify-center gap-0.5 rounded-xl border-2 px-1 py-1.5 text-center transition active:scale-[0.98]",
                     section === key
                       ? "border-primary bg-primary/20 text-fg"
                       : "border-border bg-surface text-muted",
                   )}
                 >
-                  <span aria-hidden>{short}</span>
-                  {label}
+                  <span className="text-base leading-none" aria-hidden>
+                    {short}
+                  </span>
+                  <span className="text-[10px] font-bold leading-tight">
+                    {label}
+                  </span>
                 </button>
               ))}
             </div>
 
             <p className="text-xs text-muted">
-              Toca una opción: el retrato de arriba cambia al momento.
+              {section === "skin"
+                ? "Elige el rostro (piel + pelo incluidos). Cambia al instante arriba."
+                : "Toca una opción: el retrato de arriba se actualiza al momento."}
             </p>
 
-            {/* Compact option grid — 3 cols on mobile */}
             <div className="grid grid-cols-3 gap-2">
-              {AVATAR_OPTIONS[section].map((o) => {
+              {optionsForSection().map((o) => {
                 const { ok, reason } = isAvatarOptionUnlocked(o, unlockCtx);
-                const active = avatar[section] === o.id;
+                const active =
+                  section === "skin"
+                    ? avatar.skin === o.id
+                    : avatar[section] === o.id;
                 return (
                   <button
                     key={o.id}
                     type="button"
                     disabled={!ok}
-                    onClick={() =>
-                      setAvatar({ [section]: o.id } as Partial<AvatarConfig>)
-                    }
+                    onClick={() => pickOption(section, o.id)}
                     className={cn(
-                      "flex min-h-[4.75rem] flex-col items-center justify-center rounded-xl border-2 px-1.5 py-2 text-center transition active:scale-[0.97]",
+                      "flex min-h-[5rem] flex-col items-center justify-center rounded-xl border-2 px-1.5 py-2 text-center transition active:scale-[0.97]",
                       active &&
                         ok &&
                         "border-primary bg-primary/20 ring-2 ring-primary/25",
@@ -519,12 +442,25 @@ export function AvatarCustomizer() {
                         "cursor-not-allowed border-border/40 bg-surface/40 opacity-50",
                     )}
                   >
-                    <OptionGlyph
-                      section={section}
-                      id={o.id}
-                      emoji={o.emoji}
-                    />
-                    <span className="mt-1 line-clamp-2 text-[10px] font-bold leading-tight text-fg sm:text-[11px]">
+                    {section === "skin" || section === "look" ? (
+                      <span className="text-3xl leading-none" aria-hidden>
+                        {o.emoji}
+                      </span>
+                    ) : section === "cape" ? (
+                      <span
+                        className={cn(
+                          "mx-auto block h-8 w-8 rounded-full bg-gradient-to-b",
+                          CAPE_RING[o.id as AvatarConfig["cape"]] ??
+                            CAPE_RING.violet,
+                        )}
+                        aria-hidden
+                      />
+                    ) : (
+                      <span className="text-2xl leading-none" aria-hidden>
+                        {o.emoji === "·" ? "○" : o.emoji}
+                      </span>
+                    )}
+                    <span className="mt-1 line-clamp-2 text-[10px] font-bold leading-tight text-fg">
                       {o.label}
                     </span>
                     {!ok && (
@@ -605,12 +541,6 @@ export function AvatarCustomizer() {
                             ? "✓ Equipado"
                             : "✓ Tuyo"
                           : `${item.cost} XP`}
-                        {!owned && !canAfford && (
-                          <span className="font-normal">
-                            {" "}
-                            · faltan {item.cost - xp}
-                          </span>
-                        )}
                       </p>
                     </div>
                     {!owned && (

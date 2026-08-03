@@ -55,6 +55,7 @@ export function xpProgress(xp: number): {
 export type AvatarConfig = {
   /** Apariencia base: chica o chico */
   look: "girl" | "boy";
+  /** Kept for save compat; hair is baked into face presets now */
   hair:
     | "none"
     | "short"
@@ -65,6 +66,10 @@ export type AvatarConfig = {
     | "spiky"
     | "braids"
     | "ponytail";
+  /**
+   * Face preset = skin tone + hairstyle baked into the emoji face.
+   * Legacy tone-only ids still accepted and mapped.
+   */
   skin:
     | "fair"
     | "warm"
@@ -74,7 +79,29 @@ export type AvatarConfig = {
     | "olive"
     | "golden"
     | "bronze"
-    | "ivory";
+    | "ivory"
+    // Girl faces
+    | "g-fair"
+    | "g-warm"
+    | "g-golden"
+    | "g-olive"
+    | "g-bronze"
+    | "g-deep"
+    | "g-blond"
+    | "g-red"
+    | "g-curly"
+    | "g-dark-curly"
+    // Boy faces
+    | "b-fair"
+    | "b-warm"
+    | "b-golden"
+    | "b-olive"
+    | "b-bronze"
+    | "b-deep"
+    | "b-blond"
+    | "b-red"
+    | "b-curly"
+    | "b-dark-curly";
   hat:
     | "none"
     | "star"
@@ -140,8 +167,8 @@ export type AvatarConfig = {
 
 export const DEFAULT_AVATAR: AvatarConfig = {
   look: "girl",
-  hair: "wavy",
-  skin: "fair",
+  hair: "none",
+  skin: "g-fair",
   hat: "none",
   cape: "violet",
   wand: "violet",
@@ -159,6 +186,8 @@ type OptBase = {
   tag?: string;
   /** free personal / basic option — never gated by XP or level */
   free?: boolean;
+  /** Face only shown for this look (girl/boy) */
+  forLook?: "girl" | "boy";
 };
 
 export const AVATAR_OPTIONS = {
@@ -166,6 +195,7 @@ export const AVATAR_OPTIONS = {
     { id: "girl" as const, label: "Chica", emoji: "👧", free: true, tag: "base" },
     { id: "boy" as const, label: "Chico", emoji: "👦", free: true, tag: "base" },
   ],
+  /** Hidden from UI — kept for save compatibility only */
   hair: [
     { id: "none" as const, label: "Al natural", emoji: "✨", free: true, tag: "base" },
     { id: "short" as const, label: "Corto", emoji: "✂️", free: true, tag: "base" },
@@ -177,16 +207,40 @@ export const AVATAR_OPTIONS = {
     { id: "braids" as const, label: "Trenzas", emoji: "🧵", free: true, tag: "base" },
     { id: "ponytail" as const, label: "Coleta", emoji: "🎐", free: true, tag: "base" },
   ],
+  /** Rostos: tom de pele + estilo de cabelo no próprio emoji */
   skin: [
-    { id: "fair" as const, label: "Claro", emoji: "🏻", free: true, tag: "base" },
-    { id: "ivory" as const, label: "Marfil", emoji: "🤍", free: true, tag: "base" },
-    { id: "warm" as const, label: "Cálido", emoji: "🏼", free: true, tag: "base" },
-    { id: "peach" as const, label: "Melocotón", emoji: "🍑", free: true, tag: "base" },
-    { id: "rose" as const, label: "Rosado", emoji: "🌸", free: true, tag: "base" },
-    { id: "golden" as const, label: "Dorado", emoji: "🟨", free: true, tag: "base" },
-    { id: "olive" as const, label: "Oliva", emoji: "🫒", free: true, tag: "base" },
-    { id: "bronze" as const, label: "Bronce", emoji: "🥉", free: true, tag: "base" },
-    { id: "deep" as const, label: "Moreno", emoji: "🏽", free: true, tag: "base" },
+    // —— Chica ——
+    { id: "g-fair" as const, label: "Clara · pelo castaño", emoji: "👧", free: true, tag: "base", forLook: "girl" as const },
+    { id: "g-warm" as const, label: "Cálida · pelo castaño", emoji: "👧🏼", free: true, tag: "base", forLook: "girl" as const },
+    { id: "g-golden" as const, label: "Dorada · pelo castaño", emoji: "👧🏽", free: true, tag: "base", forLook: "girl" as const },
+    { id: "g-olive" as const, label: "Oliva · pelo castaño", emoji: "👧🏽", free: true, tag: "base", forLook: "girl" as const },
+    { id: "g-bronze" as const, label: "Bronce · pelo oscuro", emoji: "👧🏾", free: true, tag: "base", forLook: "girl" as const },
+    { id: "g-deep" as const, label: "Morena · pelo oscuro", emoji: "👧🏿", free: true, tag: "base", forLook: "girl" as const },
+    { id: "g-blond" as const, label: "Clara · pelo rubio", emoji: "👱‍♀️", free: true, tag: "base", forLook: "girl" as const },
+    { id: "g-red" as const, label: "Clara · pelo rojo", emoji: "👩‍🦰", free: true, tag: "base", forLook: "girl" as const },
+    { id: "g-curly" as const, label: "Cálida · pelo rizado", emoji: "👩🏼‍🦱", free: true, tag: "base", forLook: "girl" as const },
+    { id: "g-dark-curly" as const, label: "Morena · pelo rizado", emoji: "👩🏾‍🦱", free: true, tag: "base", forLook: "girl" as const },
+    // —— Chico ——
+    { id: "b-fair" as const, label: "Claro · pelo castaño", emoji: "👦", free: true, tag: "base", forLook: "boy" as const },
+    { id: "b-warm" as const, label: "Cálido · pelo castaño", emoji: "👦🏼", free: true, tag: "base", forLook: "boy" as const },
+    { id: "b-golden" as const, label: "Dorado · pelo castaño", emoji: "👦🏽", free: true, tag: "base", forLook: "boy" as const },
+    { id: "b-olive" as const, label: "Oliva · pelo castaño", emoji: "👦🏽", free: true, tag: "base", forLook: "boy" as const },
+    { id: "b-bronze" as const, label: "Bronce · pelo oscuro", emoji: "👦🏾", free: true, tag: "base", forLook: "boy" as const },
+    { id: "b-deep" as const, label: "Moreno · pelo oscuro", emoji: "👦🏿", free: true, tag: "base", forLook: "boy" as const },
+    { id: "b-blond" as const, label: "Claro · pelo rubio", emoji: "👱", free: true, tag: "base", forLook: "boy" as const },
+    { id: "b-red" as const, label: "Claro · pelo rojo", emoji: "👨‍🦰", free: true, tag: "base", forLook: "boy" as const },
+    { id: "b-curly" as const, label: "Cálido · pelo rizado", emoji: "👨🏼‍🦱", free: true, tag: "base", forLook: "boy" as const },
+    { id: "b-dark-curly" as const, label: "Moreno · pelo rizado", emoji: "👨🏾‍🦱", free: true, tag: "base", forLook: "boy" as const },
+    // Legacy tone ids (hidden in UI via forLook omit + filter) — still valid for old saves
+    { id: "fair" as const, label: "Claro (clásico)", emoji: "👧", free: true, tag: "base" },
+    { id: "ivory" as const, label: "Marfil", emoji: "👧🏻", free: true, tag: "base" },
+    { id: "warm" as const, label: "Cálido", emoji: "👧🏼", free: true, tag: "base" },
+    { id: "peach" as const, label: "Melocotón", emoji: "👧🏼", free: true, tag: "base" },
+    { id: "rose" as const, label: "Rosado", emoji: "👧🏻", free: true, tag: "base" },
+    { id: "golden" as const, label: "Dorado", emoji: "👧", free: true, tag: "base" },
+    { id: "olive" as const, label: "Oliva", emoji: "👧", free: true, tag: "base" },
+    { id: "bronze" as const, label: "Bronce", emoji: "👧🏾", free: true, tag: "base" },
+    { id: "deep" as const, label: "Moreno", emoji: "👧🏿", free: true, tag: "base" },
   ],
   hat: [
     { id: "none" as const, label: "Sin sombrero", emoji: "·", free: true, tag: "base" },
@@ -498,35 +552,76 @@ export function normalizeAvatar(raw: Partial<AvatarConfig> | null | undefined): 
   };
 }
 
-/** Face emoji from look + skin (personal traits, always free). */
+/** Full face emoji for a preset (tone + hair baked in). */
+const FACE_EMOJI: Record<string, string> = {
+  fair: "\U0001F467",
+  ivory: "\U0001F467\U0001F3FB",
+  warm: "\U0001F467\U0001F3FC",
+  peach: "\U0001F467\U0001F3FC",
+  rose: "\U0001F467\U0001F3FB",
+  golden: "\U0001F467\U0001F3FD",
+  olive: "\U0001F467\U0001F3FD",
+  bronze: "\U0001F467\U0001F3FE",
+  deep: "\U0001F467\U0001F3FF",
+  "g-fair": "\U0001F467",
+  "g-warm": "\U0001F467\U0001F3FC",
+  "g-golden": "\U0001F467\U0001F3FD",
+  "g-olive": "\U0001F467\U0001F3FD",
+  "g-bronze": "\U0001F467\U0001F3FE",
+  "g-deep": "\U0001F467\U0001F3FF",
+  "g-blond": "\U0001F471\U0001F3FB\u200D\u2640\uFE0F",
+  "g-red": "\U0001F469\U0001F3FB\u200D\U0001F9B0",
+  "g-curly": "\U0001F469\U0001F3FC\u200D\U0001F9B1",
+  "g-dark-curly": "\U0001F469\U0001F3FE\u200D\U0001F9B1",
+  "b-fair": "\U0001F466",
+  "b-warm": "\U0001F466\U0001F3FC",
+  "b-golden": "\U0001F466\U0001F3FD",
+  "b-olive": "\U0001F466\U0001F3FD",
+  "b-bronze": "\U0001F466\U0001F3FE",
+  "b-deep": "\U0001F466\U0001F3FF",
+  "b-blond": "\U0001F471\U0001F3FB\u200D\u2642\uFE0F",
+  "b-red": "\U0001F468\U0001F3FB\u200D\U0001F9B0",
+  "b-curly": "\U0001F468\U0001F3FC\u200D\U0001F9B1",
+  "b-dark-curly": "\U0001F468\U0001F3FE\u200D\U0001F9B1",
+};
+
+const FACE_EMOJI_BOY_LEGACY: Record<string, string> = {
+  fair: "\U0001F466",
+  ivory: "\U0001F466\U0001F3FB",
+  warm: "\U0001F466\U0001F3FC",
+  peach: "\U0001F466\U0001F3FC",
+  rose: "\U0001F466\U0001F3FB",
+  golden: "\U0001F466\U0001F3FD",
+  olive: "\U0001F466\U0001F3FD",
+  bronze: "\U0001F466\U0001F3FE",
+  deep: "\U0001F466\U0001F3FF",
+};
+
 export function avatarFaceEmoji(avatar: AvatarConfig): string {
   const a = normalizeAvatar(avatar);
+  const fromOpt = AVATAR_OPTIONS.skin.find((s) => s.id === a.skin) as
+    | { emoji: string; forLook?: string }
+    | undefined;
+  if (fromOpt?.forLook) return fromOpt.emoji;
   if (a.look === "boy") {
-    const boys: Record<AvatarConfig["skin"], string> = {
-      fair: "👦",
-      ivory: "👦🏻",
-      warm: "👦🏼",
-      peach: "👦🏼",
-      rose: "👦🏻",
-      golden: "👦🏽",
-      olive: "👦🏽",
-      bronze: "👦🏾",
-      deep: "👦🏿",
-    };
-    return boys[a.skin] ?? "👦";
+    if (String(a.skin).startsWith("b-")) return FACE_EMOJI[a.skin] ?? "\U0001F466";
+    return FACE_EMOJI_BOY_LEGACY[a.skin] ?? "\U0001F466";
   }
-  const girls: Record<AvatarConfig["skin"], string> = {
-    fair: "👧",
-    ivory: "👧🏻",
-    warm: "👧🏼",
-    peach: "👧🏼",
-    rose: "👧🏻",
-    golden: "👧",
-    olive: "👧",
-    bronze: "👧🏾",
-    deep: "👧🏿",
-  };
-  return girls[a.skin] ?? "👧";
+  if (String(a.skin).startsWith("g-")) return FACE_EMOJI[a.skin] ?? "\U0001F467";
+  return FACE_EMOJI[a.skin] ?? "\U0001F467";
+}
+
+/** Default face when switching Chico/Chica */
+export function defaultFaceForLook(look: "girl" | "boy"): AvatarConfig["skin"] {
+  return look === "boy" ? "b-fair" : "g-fair";
+}
+
+/** Face cards shown in Tono for the active look */
+export function facesForLook(look: "girl" | "boy") {
+  return AVATAR_OPTIONS.skin.filter((s) => {
+    const fl = (s as { forLook?: string }).forLook;
+    return fl === look;
+  });
 }
 
 export function isAvatarOptionUnlocked(

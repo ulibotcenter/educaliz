@@ -42,7 +42,8 @@ export function emptyProgress(
     avatar: normalizeAvatar({
       ...DEFAULT_AVATAR,
       look,
-      hair: look === "boy" ? "short" : "wavy",
+      hair: "none",
+      skin: look === "boy" ? "b-fair" : "g-fair",
     }),
     unlockedStories: ["intro"],
     pendingStoryId: null,
