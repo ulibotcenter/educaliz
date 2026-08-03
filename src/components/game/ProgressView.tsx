@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { FileDown, RotateCcw, Sparkles, Trophy, User } from "lucide-react";
 import { useGameStore } from "@/lib/game-store";
+import { useProfilesStore } from "@/lib/profiles";
 import { ALL_BADGES, xpProgress } from "@/lib/progression";
 import { downloadLiveParentReport } from "@/lib/build-parent-report";
 import { analyzeSkills } from "@/lib/skill-insights";
@@ -42,23 +44,57 @@ export function ProgressView() {
   const sessionsTotal =
     areaSessionCount.math + areaSessionCount.language + areaSessionCount.english;
 
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [pdfMsg, setPdfMsg] = useState<string | null>(null);
+  const [pdfErr, setPdfErr] = useState<string | null>(null);
+
   function downloadReport() {
-    const s = useGameStore.getState();
-    downloadLiveParentReport({
-      playerName: s.playerName,
-      mathCompleted: s.mathCompleted,
-      languageCompleted: s.languageCompleted,
-      englishCompleted: s.englishCompleted,
-      books: s.books,
-      totalCorrect: s.totalCorrect,
-      totalWrong: s.totalWrong,
-      streak: s.streak,
-      maxStreak: s.maxStreak,
-      points: s.points,
-      xp: s.xp,
-      badges: s.badges,
-      skillStats: s.skillStats,
-    });
+    setPdfBusy(true);
+    setPdfMsg(null);
+    setPdfErr(null);
+    try {
+      // Flush latest game progress to active profile before reading
+      try {
+        useProfilesStore.getState().syncActiveFromGame();
+      } catch {
+        /* profiles optional */
+      }
+      const s = useGameStore.getState();
+      const result = downloadLiveParentReport({
+        playerName: s.playerName,
+        mathCompleted: s.mathCompleted,
+        languageCompleted: s.languageCompleted,
+        englishCompleted: s.englishCompleted,
+        areaSessionCount: s.areaSessionCount,
+        books: s.books,
+        totalCorrect: s.totalCorrect,
+        totalWrong: s.totalWrong,
+        streak: s.streak,
+        maxStreak: s.maxStreak,
+        points: s.points,
+        xp: s.xp,
+        badges: s.badges,
+        skillStats: s.skillStats,
+        bossBeaten: s.bossBeaten,
+        perfectMissions: s.perfectMissions,
+        levelRuns: s.levelRuns,
+      });
+      if (!result.ok) {
+        setPdfErr(result.error);
+        return;
+      }
+      setPdfMsg(
+        `¡Listo! Se descargó «${result.filename}». Revisa la carpeta de descargas.`,
+      );
+    } catch (e) {
+      setPdfErr(
+        e instanceof Error
+          ? e.message
+          : "No se pudo descargar el PDF. Prueba otra vez.",
+      );
+    } finally {
+      setPdfBusy(false);
+    }
   }
 
   return (
@@ -103,11 +139,24 @@ export function ProgressView() {
         <button
           type="button"
           onClick={downloadReport}
-          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary text-base font-semibold text-primary-fg shadow-md"
+          disabled={pdfBusy}
+          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary text-base font-semibold text-primary-fg shadow-md disabled:opacity-60"
         >
           <FileDown className="h-5 w-5" />
-          Descargar informe PDF para la familia
+          {pdfBusy
+            ? "Generando PDF…"
+            : "Descargar informe PDF para la familia"}
         </button>
+        {pdfMsg && (
+          <p className="rounded-lg border border-success/40 bg-success/10 px-3 py-2 text-sm font-medium text-success" role="status">
+            {pdfMsg}
+          </p>
+        )}
+        {pdfErr && (
+          <p className="rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-sm font-medium text-danger" role="alert">
+            {pdfErr}
+          </p>
+        )}
       </section>
 
       <RewardRoulette />

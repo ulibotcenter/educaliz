@@ -53,6 +53,7 @@ export function ProfileGate() {
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [pin, setPin] = useState("");
+  const [look, setLook] = useState<"girl" | "boy">("girl");
   const [loginUser, setLoginUser] = useState("");
   const [loginPin, setLoginPin] = useState("");
   const [friendCode, setFriendCode] = useState(urlInvite);
@@ -221,6 +222,7 @@ export function ProfileGate() {
         displayName: dn,
         pin: pin.trim() || null,
         friendCode: friendCode.trim() || null,
+        look,
       });
       if (!r.ok) {
         setError(r.error.includes("usado") ? USERNAME_TAKEN_MSG : r.error);
@@ -613,9 +615,60 @@ export function ProfileGate() {
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value.slice(0, 24))}
               className="min-h-12 w-full rounded-xl border border-border bg-surface px-4 text-base text-fg outline-none ring-primary focus:ring-2"
-              placeholder="ej: Liz"
+              placeholder="ej: Alex"
               disabled={busy}
             />
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-fg" id="look-label">
+              ¿Cómo quieres tu avatar?
+            </p>
+            <div
+              className="grid grid-cols-2 gap-3"
+              role="group"
+              aria-labelledby="look-label"
+            >
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setLook("girl")}
+                className={cn(
+                  "flex min-h-[5.5rem] flex-col items-center justify-center gap-1 rounded-2xl border-2 p-3 text-center transition active:scale-[0.98]",
+                  look === "girl"
+                    ? "border-primary bg-primary/15 shadow-md ring-2 ring-primary/30"
+                    : "border-border bg-surface hover:border-primary/40",
+                )}
+              >
+                <span className="text-3xl" aria-hidden>
+                  👧
+                </span>
+                <span className="font-display text-base font-semibold text-fg">
+                  Chica
+                </span>
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setLook("boy")}
+                className={cn(
+                  "flex min-h-[5.5rem] flex-col items-center justify-center gap-1 rounded-2xl border-2 p-3 text-center transition active:scale-[0.98]",
+                  look === "boy"
+                    ? "border-primary bg-primary/15 shadow-md ring-2 ring-primary/30"
+                    : "border-border bg-surface hover:border-primary/40",
+                )}
+              >
+                <span className="text-3xl" aria-hidden>
+                  👦
+                </span>
+                <span className="font-display text-base font-semibold text-fg">
+                  Chico
+                </span>
+              </button>
+            </div>
+            <p className="text-xs text-muted">
+              Podrás cambiar pelo, capa y más en Personalizar avatar.
+            </p>
           </div>
 
           <div className="space-y-1.5 rounded-xl border-2 border-amber-400/50 bg-amber-400/10 p-3">

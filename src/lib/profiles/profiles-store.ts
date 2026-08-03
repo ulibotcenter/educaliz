@@ -395,7 +395,8 @@ export const useProfilesStore = create<ProfilesState>()(
           await get().flushActiveToCloud();
 
           const id = newId();
-          const progress = emptyProgress(displayName);
+          const look = input.look === "boy" ? "boy" : "girl";
+          const progress = emptyProgress(displayName, look);
           const inviteCode = generateInviteCode(check.normalized, id);
 
           // Friend referral — only on real new profile creation

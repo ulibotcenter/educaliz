@@ -254,7 +254,7 @@ function unlockStoriesForState(s: {
 export const useGameStore = create<GameState>()(
   persist(
     (set, get) => ({
-      playerName: "Liz",
+      playerName: "Aprendiz",
       points: 0,
       xp: 0,
       streak: 0,
@@ -293,7 +293,7 @@ export const useGameStore = create<GameState>()(
       view: "home",
 
       setView: (v) => set({ view: v }),
-      setName: (n) => set({ playerName: n.trim() || "Liz" }),
+      setName: (n) => set({ playerName: n.trim() || "Aprendiz" }),
       setPlayMode: (m) => set({ playMode: m }),
       setTheme: (t) => set({ theme: normalizeThemeId(t) }),
       equipTempBadge: (id) => {

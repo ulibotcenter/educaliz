@@ -429,7 +429,7 @@ export const MATH_BANK: MathQ[] = [
     "id": "m48",
     "level": 1,
     "type": "problema",
-    "prompt": "Liz encuentra 24 runas. Usa 9 en un hechizo y luego halla 15 más. ¿Cuántas runas tiene al final?",
+    "prompt": "Alex encuentra 24 runas. Usa 9 en un hechizo y luego halla 15 más. ¿Cuántas runas tiene al final?",
     "answer": 30,
     "hint": "Resta y después suma.",
     "explanation": "¡Casi! Primero 24 − 9 = 15. Luego 15 + 15 = 30. La respuesta es 30. ¡Lee otra vez el hechizo y lo clavas!"
@@ -465,7 +465,7 @@ export const MATH_BANK: MathQ[] = [
     "id": "m52",
     "level": 1,
     "type": "problema",
-    "prompt": "Liz tenía 50 monedas de magia. Compra una capa por 28. ¿Cuántas le quedan?",
+    "prompt": "Alex tenía 50 monedas de magia. Compra una capa por 28. ¿Cuántas le quedan?",
     "answer": 22,
     "hint": "Resta el precio.",
     "explanation": "¡Casi! 50 − 28 = 22 monedas. ¡Ahorro de mago! La respuesta es 22. ¡Lee otra vez el hechizo y lo clavas!"
@@ -798,7 +798,7 @@ export const MATH_BANK: MathQ[] = [
     "id": "m89",
     "level": 2,
     "type": "problema",
-    "prompt": "Liz lee 18 páginas el lunes y el doble el martes. ¿Cuántas páginas en total esos dos días?",
+    "prompt": "Alex lee 18 páginas el lunes y el doble el martes. ¿Cuántas páginas en total esos dos días?",
     "answer": 54,
     "hint": "Doble de 18 es 36; suma.",
     "explanation": "¡Casi! Martes: 18×2=36. Total: 18+36=54. La respuesta es 54. ¡Lee otra vez el hechizo y lo clavas!"
@@ -807,7 +807,7 @@ export const MATH_BANK: MathQ[] = [
     "id": "m90",
     "level": 2,
     "type": "problema",
-    "prompt": "Hay 7 cofres. En cada cofre, 12 monedas. Liz regala 20 monedas. ¿Cuántas le quedan?",
+    "prompt": "Hay 7 cofres. En cada cofre, 12 monedas. Alex regala 20 monedas. ¿Cuántas le quedan?",
     "answer": 64,
     "hint": "Multiplica y resta.",
     "explanation": "¡Casi! 7×12=84. 84−20=64 monedas. La respuesta es 64. ¡Lee otra vez el hechizo y lo clavas!"
@@ -834,7 +834,7 @@ export const MATH_BANK: MathQ[] = [
     "id": "m93",
     "level": 2,
     "type": "problema",
-    "prompt": "Un hechizo necesita 15 runas. Liz quiere preparar 6 hechizos. ¿Cuántas runas necesita?",
+    "prompt": "Un hechizo necesita 15 runas. Alex quiere preparar 6 hechizos. ¿Cuántas runas necesita?",
     "answer": 90,
     "hint": "15 × 6.",
     "explanation": "¡Casi! 15×6=90 runas en total. La respuesta es 90. ¡Lee otra vez el hechizo y lo clavas!"
@@ -1104,7 +1104,7 @@ export const MATH_BANK: MathQ[] = [
     "id": "m123",
     "level": 3,
     "type": "problema",
-    "prompt": "Liz tiene 120 monedas. Gasta 1/3 en un libro y 25 en una varita. ¿Cuántas monedas le quedan?",
+    "prompt": "Alex tiene 120 monedas. Gasta 1/3 en un libro y 25 en una varita. ¿Cuántas monedas le quedan?",
     "answer": 55,
     "hint": "1/3 de 120 es 40; resta 40 y 25.",
     "explanation": "¡Casi! 120÷3=40 en el libro. 120−40=80. 80−25=55 monedas. ¡Presupuesto de mago!"
@@ -1113,7 +1113,7 @@ export const MATH_BANK: MathQ[] = [
     "id": "m124",
     "level": 3,
     "type": "problema",
-    "prompt": "Un mapa mide 35 cm de largo. Liz pone 4 mapas en fila sin huecos. ¿Cuántos cm de fila?",
+    "prompt": "Un mapa mide 35 cm de largo. Alex pone 4 mapas en fila sin huecos. ¿Cuántos cm de fila?",
     "answer": 140,
     "hint": "35×4.",
     "explanation": "¡Casi! 35×4=140 cm. ¡Fila de mapas lista! Respira, repasa el paso y lo clavas en el siguiente intento."
@@ -1140,7 +1140,7 @@ export const MATH_BANK: MathQ[] = [
     "id": "m127",
     "level": 3,
     "type": "problema",
-    "prompt": "Liz practica 25 minutos al día, 6 días. ¿Cuántos minutos en total?",
+    "prompt": "Alex practica 25 minutos al día, 6 días. ¿Cuántos minutos en total?",
     "answer": 150,
     "hint": "25×6.",
     "explanation": "¡Casi! 25×6=150 minutos de magia semanal. Respira, repasa el paso y lo clavas en el siguiente intento."
@@ -1410,7 +1410,7 @@ export const MATH_BANK: MathQ[] = [
     "id": "m157",
     "level": 4,
     "type": "problema",
-    "prompt": "Liz corre 4 vueltas de 250 m. ¿Cuántos km ha corrido? (escribe 1 porque 1000 m = 1 km)",
+    "prompt": "Alex corre 4 vueltas de 250 m. ¿Cuántos km ha corrido? (escribe 1 porque 1000 m = 1 km)",
     "answer": 1,
     "hint": "4×250=1000 m = 1 km.",
     "explanation": "¡Casi! 4×250=1000 m, y 1000 m = 1 km. ¡Meta cumplida! Respira, repasa el paso y lo clavas en el siguiente intento."
@@ -1419,7 +1419,7 @@ export const MATH_BANK: MathQ[] = [
     "id": "m158",
     "level": 4,
     "type": "problema",
-    "prompt": "Un libro cuesta 12 monedas. Liz compra 7 y paga con 100. ¿Cuánto le devuelven?",
+    "prompt": "Un libro cuesta 12 monedas. Alex compra 7 y paga con 100. ¿Cuánto le devuelven?",
     "answer": 16,
     "hint": "12×7=84; 100−84.",
     "explanation": "¡Casi! 12×7=84. 100−84=16 de vuelta. ¡Cambio correcto! Respira, repasa el paso y lo clavas en el siguiente intento."
@@ -1653,7 +1653,7 @@ export const MATH_BANK: MathQ[] = [
     "id": "m184",
     "level": 5,
     "type": "problema",
-    "prompt": "Liz gana 45 XP por misión y hace 8 misiones. Gasta 120 XP en la tienda. ¿Cuánta XP le queda de esas misiones?",
+    "prompt": "Alex gana 45 XP por misión y hace 8 misiones. Gasta 120 XP en la tienda. ¿Cuánta XP le queda de esas misiones?",
     "answer": 240,
     "hint": "45×8 − 120.",
     "explanation": "¡Casi! 45×8=360. 360−120=240 XP. ¡Gestión de mago! Respira, repasa el paso y lo clavas en el siguiente intento."
@@ -1689,7 +1689,7 @@ export const MATH_BANK: MathQ[] = [
     "id": "m188",
     "level": 5,
     "type": "problema",
-    "prompt": "Liz reparte 180 monedas entre 12 aprendices por igual. Cada uno regala 3. ¿Cuántas monedas le quedan a cada uno?",
+    "prompt": "Alex reparte 180 monedas entre 12 aprendices por igual. Cada uno regala 3. ¿Cuántas monedas le quedan a cada uno?",
     "answer": 12,
     "hint": "180÷12=15; 15−3=12.",
     "explanation": "¡Casi! 180÷12=15 monedas cada uno. 15−3=12 les quedan. Respira, repasa el paso y lo clavas en el siguiente intento."

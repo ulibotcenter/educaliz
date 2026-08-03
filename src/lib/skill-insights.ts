@@ -1,4 +1,4 @@
-/** Friendly strong / weak skill analysis for Liz + parents */
+/** Friendly strong / weak skill analysis for students + parents */
 
 export type SkillStat = { ok: number; bad: number };
 

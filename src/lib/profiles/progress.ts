@@ -20,9 +20,12 @@ const emptyBook = (): BookFicha => ({
 
 const emptyRuns = () => ({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }) as const;
 
-export function emptyProgress(displayName: string): PlayerProgress {
+export function emptyProgress(
+  displayName: string,
+  look: "girl" | "boy" = "girl",
+): PlayerProgress {
   return {
-    playerName: displayName || "Mago",
+    playerName: displayName || "Aprendiz",
     points: 0,
     xp: 0,
     streak: 0,
@@ -36,7 +39,11 @@ export function emptyProgress(displayName: string): PlayerProgress {
     totalWrong: 0,
     playMode: "official",
     reviewQueue: [],
-    avatar: { ...DEFAULT_AVATAR },
+    avatar: normalizeAvatar({
+      ...DEFAULT_AVATAR,
+      look,
+      hair: look === "boy" ? "short" : "wavy",
+    }),
     unlockedStories: ["intro"],
     pendingStoryId: null,
     bossBeaten: { math: false, language: false, english: false },

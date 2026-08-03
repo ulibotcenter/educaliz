@@ -3,7 +3,7 @@ import { AuthProvider } from "@/lib/auth/provider";
 import { CreatedWithGrokBanner } from "@/components/created-with-grok-banner";
 import appCss from "../styles.css?url";
 
-const APP_NAME = "Academia Arcana — Liz";
+const APP_NAME = "Academia Arcana";
 const host = import.meta.env.VITE_PUBLIC_HOSTNAME;
 const ogImage = host
   ? `https://og.grok.me/v1/card.png?host=${encodeURIComponent(host)}&title=${encodeURIComponent(APP_NAME)}`

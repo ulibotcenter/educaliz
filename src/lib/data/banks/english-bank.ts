@@ -550,7 +550,7 @@ export const ENG_BANK: EngQ[] = [
     "id": "e35",
     "level": 2,
     "kind": "choose",
-    "prompt": "My name ___ Liz.",
+    "prompt": "My name ___ Alex.",
     "promptEs": "to be",
     "options": [
       "be",
@@ -560,7 +560,7 @@ export const ENG_BANK: EngQ[] = [
     ],
     "answer": "is",
     "hint": "Name + is.",
-    "explanation": "¡Casi! La forma correcta es «is». My name is Liz. Patrón clásico de presentación. Fíjate en la persona (I/you/he…) y en el tiempo del verbo. ¡Un repaso y brilla!"
+    "explanation": "¡Casi! La forma correcta es «is». My name is Alex. Patrón clásico de presentación. Fíjate en la persona (I/you/he…) y en el tiempo del verbo. ¡Un repaso y brilla!"
   },
   {
     "id": "e36",

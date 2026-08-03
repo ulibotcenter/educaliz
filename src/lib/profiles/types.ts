@@ -107,6 +107,8 @@ export type CreateProfileInput = {
   pin?: string | null;
   /** Friend's invite code (optional) */
   friendCode?: string | null;
+  /** Initial avatar look — boy or girl */
+  look?: "girl" | "boy";
 };
 
 export type UsernameCheck =

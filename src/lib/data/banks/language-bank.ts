@@ -43,15 +43,15 @@ export const LANG_BANK: LangQ[] = [
     "level": 1,
     "title": "¿Cuál es el verbo?",
     "tip": "El verbo es la acción o el estado.",
-    "text": "Liz abre el grimorio.",
+    "text": "Alex abre el grimorio.",
     "options": [
       "grimorio",
       "abre",
-      "Liz",
+      "Alex",
       "el grimorio"
     ],
     "answer": "abre",
-    "explanation": "¡Casi! El verbo es «abre»: es la acción. Liz es quien abre; el grimorio es el objeto. ¡Verbo desbloqueado!",
+    "explanation": "¡Casi! El verbo es «abre»: es la acción. Alex es quien abre; el grimorio es el objeto. ¡Verbo desbloqueado!",
     "skillTag": "verbo",
     "hint": "¿Qué acción ocurre?",
     "showSentence": true
@@ -351,13 +351,13 @@ export const LANG_BANK: LangQ[] = [
     "tip": "Nombres propios y inicio.",
     "text": "",
     "options": [
-      "Liz vive en Madrid",
+      "Alex vive en Madrid",
       "liz vive en Madrid",
-      "Liz vive en madrid",
+      "Alex vive en madrid",
       "liz vive en madrid"
     ],
-    "answer": "Liz vive en Madrid",
-    "explanation": "¡Casi! «Liz» y «Madrid» son nombres propios: mayúscula. También al empezar la frase. ¡Mayúsculas de honor!",
+    "answer": "Alex vive en Madrid",
+    "explanation": "¡Casi! «Alex» y «Madrid» son nombres propios: mayúscula. También al empezar la frase. ¡Mayúsculas de honor!",
     "skillTag": "ortografia",
     "hint": "Nombres propios",
     "showSentence": false
@@ -493,15 +493,15 @@ export const LANG_BANK: LangQ[] = [
     "level": 2,
     "title": "Sujeto compuesto",
     "tip": "Puede haber más de un núcleo.",
-    "text": "Liz y Maya estudian juntas.",
+    "text": "Alex y Maya estudian juntas.",
     "options": [
       "juntas",
       "estudian juntas",
-      "Liz y Maya",
+      "Alex y Maya",
       "estudian"
     ],
-    "answer": "Liz y Maya",
-    "explanation": "¡Casi! El sujeto es «Liz y Maya» (dos personas). Predicado: «estudian juntas». ¡Sujeto doble!",
+    "answer": "Alex y Maya",
+    "explanation": "¡Casi! El sujeto es «Alex y Maya» (dos personas). Predicado: «estudian juntas». ¡Sujeto doble!",
     "skillTag": "sujeto",
     "hint": "¿Quiénes?",
     "showSentence": true
@@ -673,15 +673,15 @@ export const LANG_BANK: LangQ[] = [
     "level": 2,
     "title": "¿Complemento directo?",
     "tip": "¿Qué + verbo?",
-    "text": "Liz lee un pergamino.",
+    "text": "Alex lee un pergamino.",
     "options": [
       "lee un",
       "un pergamino",
-      "Liz",
+      "Alex",
       "lee"
     ],
     "answer": "un pergamino",
-    "explanation": "¡Casi! «un pergamino» es CD: responde a «¿qué lee Liz?». ¡Objeto del hechizo!",
+    "explanation": "¡Casi! «un pergamino» es CD: responde a «¿qué lee Alex?». ¡Objeto del hechizo!",
     "skillTag": "complemento",
     "hint": "¿Qué lee?",
     "showSentence": true
@@ -1447,15 +1447,15 @@ export const LANG_BANK: LangQ[] = [
     "level": 5,
     "title": "Análisis CD/CI",
     "tip": "",
-    "text": "La esfinge contó un secreto a Liz.",
+    "text": "La esfinge contó un secreto a Alex.",
     "options": [
       "La esfinge = CD",
-      "un secreto = CD; a Liz = CI",
-      "a Liz = CD",
+      "un secreto = CD; a Alex = CI",
+      "a Alex = CD",
       "un secreto = CI"
     ],
-    "answer": "un secreto = CD; a Liz = CI",
-    "explanation": "¡Casi! ¿Qué contó? un secreto (CD). ¿A quién? a Liz (CI).",
+    "answer": "un secreto = CD; a Alex = CI",
+    "explanation": "¡Casi! ¿Qué contó? un secreto (CD). ¿A quién? a Alex (CI).",
     "skillTag": "complemento",
     "hint": "¿Qué? ¿A quién?",
     "showSentence": true
@@ -2005,15 +2005,15 @@ export const LANG_BANK: LangQ[] = [
     "level": 3,
     "title": "Complemento directo",
     "tip": "¿Qué + verbo?",
-    "text": "Liz lee un pergamino antiguo.",
+    "text": "Alex lee un pergamino antiguo.",
     "options": [
       "un pergamino antiguo",
-      "Liz",
+      "Alex",
       "lee",
       "antiguo solo"
     ],
     "answer": "un pergamino antiguo",
-    "explanation": "¡Casi! Pregunta: ¿qué lee Liz? → «un pergamino antiguo». Ese es el complemento directo. El sujeto es Liz.",
+    "explanation": "¡Casi! Pregunta: ¿qué lee Alex? → «un pergamino antiguo». Ese es el complemento directo. El sujeto es Alex.",
     "skillTag": "complemento",
     "hint": "¿Qué lee?",
     "showSentence": true
@@ -2023,11 +2023,11 @@ export const LANG_BANK: LangQ[] = [
     "level": 3,
     "title": "Complemento indirecto",
     "tip": "¿A quién?",
-    "text": "Liz regala un libro a Maya.",
+    "text": "Alex regala un libro a Maya.",
     "options": [
       "a Maya",
       "un libro",
-      "Liz",
+      "Alex",
       "regala"
     ],
     "answer": "a Maya",

@@ -9,7 +9,7 @@ function Login() {
       <div className="w-full max-w-sm space-y-4 rounded-xl border border-border bg-card p-6">
         <h1 className="font-display text-xl font-semibold text-fg">Entrar (opcional)</h1>
         <p className="text-sm text-muted">
-          El juego de Liz funciona sin cuenta. El progreso se guarda en este dispositivo.
+          Academia Arcana funciona sin cuenta. El progreso se guarda en este dispositivo.
         </p>
         {authEnabled ? (
           GROK_PROVIDERS.map((p) => (
